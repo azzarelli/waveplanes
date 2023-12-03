@@ -23,8 +23,6 @@ We use [wandb](https://wandb.ai/) to track our results. This isn't necessary and
 
 Finally after training and rendering all results can be found in the log folder.
 
-*Note: We have not modified or deleted functionality for the K-Planes field and K-Planes proposal networks. To run this model, please change the configurations for K-Planes hyper-parameters and use set the `use_wavelet_field` and `use_wavelet_psn` options to `False`.*
-
 ## Commands
 
 In `run.sh` we provide various ways to run the code. The main way is to train a model is to use the following command:
