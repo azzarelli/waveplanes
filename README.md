@@ -3,7 +3,7 @@ Code release for:
 
 > __WavePlanes: A compact Wavelet representation for Dynamic Neural Radiance Fields__
 >
-> [Adrian Azzarelli*](https://www.bristol.ac.uk/people/person/Adrian-Azzarelli-e2aebee2-db4d-449f-b0dd-c3548eecb524/), [Pui Anantrasirichai]([https://www.iit.it/web/iit-mit-usa/people-details/-/people/giacomo-meanti](https://www.bristol.ac.uk/people/person/Pui-Anantrasirichai-49b2250e-53e4-4631-aedc-8154b2cff568/)), [David R Bull]([https://frederikwarburg.github.io/](https://www.bristol.ac.uk/people/person/David-Bull-f53987d8-4d62-431b-8228-2d39f944fbfe/))
+> [Adrian Azzarelli*](https://www.bristol.ac.uk/people/person/Adrian-Azzarelli-e2aebee2-db4d-449f-b0dd-c3548eecb524/), [Pui Anantrasirichai](https://www.bristol.ac.uk/people/person/Pui-Anantrasirichai-49b2250e-53e4-4631-aedc-8154b2cff568/), [David R Bull](https://www.bristol.ac.uk/people/person/David-Bull-f53987d8-4d62-431b-8228-2d39f944fbfe/)
 
 :lemon: [Project page](...)
 :writing_hand: [Paper](...)
