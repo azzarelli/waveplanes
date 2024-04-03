@@ -9,64 +9,35 @@ Code release for:
 :writing_hand: [Paper](https://arxiv.org/abs/2312.02218)
 
 
+## What is this branch?
+
+As Gaussian Splatting has become popular, we implement a reduced version of the WavePlanes model on the [4DGaussians](https://github.com/hustvl/4DGaussians) model. Its reduced because we don't include the compression functionality as it didn't make much sense (model size limitations relate more to the large point clouds, only the hex-plane feature decoders). 
+
+Specifically we make minor modifications:
+ 
+1. Adding `scene.waveplane.py` (using WavePlanes instead of HexPlane decomposition)
+2. Updating `scene.gaussian_model.py` regularization functions to reflect the structure of the GridSet
+3. Add a live GUI (`gui.py`) using [dearpygui library](https://github.com/hoffstadt/DearPyGui) to view the scene, training and testing results in real-time
+
 ## Setup 
 
-We recommend using a conda environment (a high-memory GPU is not required). This should be run on a Linux OS, however we provide details below to modify the code and run on Windows. We consider this a branch off the [K-Planes](https://github.com/sarafridov/K-Planes) repository and follows the same installation process, so K-Planes Github issues may also prove helpful for debugging and more.
+1. Follow installation steps from [4DGaussians](https://github.com/hustvl/4DGaussians)
+2. Install `pytroch_wavelets_` as done in the `main` branch
+3. Pip-Install [dearpygui](https://github.com/hoffstadt/DearPyGui) 
 
-All data sets are freely avaliable online.
+## New Commands
 
-Configuration files are provided in `plenoxels/configs/final/[D-NeRF/DyNeRF/LLFF].py`.
-
-We make minor modifications to the [pytorch_wavelets](https://pytorch-wavelets.readthedocs.io/en/latest/readme.html) library to work with [native Pytorch mixed precision](https://pytorch.org/blog/accelerating-training-on-nvidia-gpus-with-pytorch-automatic-mixed-precision/) (using `fp16`). The modifications consist of two lines in `pytorch_wavelets_/dwt/lowlevel.py` which cast half-precision floats to regular floats. To use the modified library unzip `pytorch_wavelets_.zip` and place the contents in the base folder (file management discussed below).
-
-We use [wandb](https://wandb.ai/) to track our results. This isn't necessary and can be 'turned off' using the command `wandb disabled`.
-
-Finally after training and rendering all results can be found in the log folder.
-
-## Commands
-
-In `run.sh` we provide various ways to run the code. The main way is to train a model is to use the following command:
+To train and view testing results:
 ```
-PYTHONPATH='.' python plenoxels/main.py --config-path path/to/config.py option=[choice]
+python gui.py -s data/dnerf/jumpingjacks --gui --port 6017 --expname "dnerf/jumpingjacks" --configs arguments/dnerf/jumpingjacks.py 
 ```
 
-To render a model the following command can be used:
-```
-PYTHONPATH='.' python plenoxels/main.py --config-path path/to/config.py --log-dir path/to/log/folder --render-only expname=[experiment name]
-```
-
-To validate a model the following command can be used:
-```
-PYTHONPATH='.' python plenoxels/main.py --config-path path/to/config.py --log-dir path/to/log/folder --validate-only expname=[experiment name]
-```
-
-To decompose a model into static and dynamic components the following command can be used:
-```
-PYTHONPATH='.' python plenoxels/main.py --config-path path/to/config.py --log-dir path/to/log/folder --spacetime-only expname=[experiment name]
-```
-
-Note: to generate IST weights for the DyNeRF dataset, we recomend training a single iteration with 8x downsampling. Then run as usual with 2x down sampling.
+Note that during training only PSNR and SSIM are tested. For MS-SSIM, D-SSIM, LPIPS-VGG and LPIPS-Alex you need to wait untill training is completed.
 
 ## Compression
 
-We compress our model after training. This can be done using the `--validate-only` flag which saves and loads the main field to the `fields/` folder. Note that the current implementation only supports saving one compressed model at a time. If you run the validation again it will overwrite any previously compressed models in the save folder.
+Not implemented (this branch is just to share BTS development) but I can upon request.
 
-The default is LZMA however alternatives are avaliable by using the `compression:[BZ2, LZMA, pickle, GZIP]` option in the `grid_config` variable in the config file.
+## Viewer Example
 
-## File Management
-
-The main folder should contain:
-
-1. data (place data sets in here)
-2. fields (temporary folder for compressed models)
-3. logs (results + uncompressed models)
-4. plenoxels (code)
-5. pytorch_wavelets_
-
-Note: Depending on the file structure of imported data sets the relevant configuration files may need to be changed.
-
-## How to: Windows
-
-To modify the code to run on Windows we first change `plenoxels/main.py:Line 25` to `gpu = 0`. This expects a single GPU with id 0. If you have other GPUs change the line to match the id. The other modification is to comment out any line that relies on the `resource` package (e.g. `plenoxels/datasets/dataloading.py`:Line 3 & 16-17).
-
-Note that it is likely the SSIM functionality will throw Warnings (not relevant to our implementation). These can be turned off by instantiating the [right code prior to running](https://stackoverflow.com/questions/879173/how-to-ignore-deprecation-warnings-in-python).
+<img src="assets/example_screen.png" alt="Example of Liver Viewer">
