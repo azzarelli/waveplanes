@@ -9,8 +9,6 @@ import torch.optim.lr_scheduler
 from torch import nn
 import torchvision.transforms as T
 
-from kornia.filters import gaussian_blur2d, laplacian
-
 from plenoxels.models.lowrank_model import LowrankModel
 from plenoxels.ops.losses.histogram_loss import interlevel_loss
 from plenoxels.raymarching.ray_samplers import RaySamples

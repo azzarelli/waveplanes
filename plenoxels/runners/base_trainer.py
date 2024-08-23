@@ -23,6 +23,8 @@ from plenoxels.ops.lr_scheduling import (
 )
 
 import cv2
+from DepthAnythingV2.depth_anything_v2.dpt import DepthAnythingV2
+
 
 import wandb
 
@@ -88,11 +90,21 @@ class BaseTrainer(abc.ABC):
                 )
             
             self.timer.check("model-forward")
-
-            # Need to composite the alpha values
-        
+            
             # Reconstruction loss
             recon_loss = self.criterion(fwd_out['rgb'], data['imgs'])
+            recon_loss += 2.*self.criterion(data['depth']* fwd_out['rgb'], data['depth']*data['imgs'])
+
+            # print(data['imgs'].shape)
+            # exit()
+            # dep_gt = depth = self.depth_model.infer_image(data['imgs']) # HxW raw depth map in numpy
+
+            # import matplotlib.pyplot as plt
+            # plt.imshow(depth, cmap='gray')
+            # plt.colorbar()  # Optional: Add a color bar to the side
+            # plt.show()
+            # exit()
+
             # Regularization
             loss = recon_loss
             
@@ -235,6 +247,8 @@ class BaseTrainer(abc.ABC):
         data["rays_o"] = data["rays_o"].to(self.device)
         data["rays_d"] = data["rays_d"].to(self.device)
         data["imgs"] = data["imgs"].to(self.device)
+        data["depth"] = data["depth"].to(self.device)
+
         data["near_fars"] = data["near_fars"].to(self.device)
         if "timestamps" in data:
             data["timestamps"] = data["timestamps"].to(self.device)

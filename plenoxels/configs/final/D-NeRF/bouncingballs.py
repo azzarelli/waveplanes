@@ -1,6 +1,6 @@
 config = {
- 'expname': 'balls',
- 'logdir': './logs/bouncingballs',
+ 'expname': 'balls_depth_loss',
+ 'logdir': './logs/bouncingballs_75time_2xdepth',
  'device': 'cuda:0',
   'wandbproject':'KW_DNERF',
 
@@ -10,7 +10,7 @@ config = {
  'fusion':'MUL', # MUL, ADD, ZMM, ZAM
 
  'data_downsample': 2.0,
- 'data_dirs': ['data/dnerf/data/bouncingballs'],
+ 'data_dirs': ['/home/barry/data/dnerf/bouncingballs'],
  'contract': False,
  'ndc': False,
  'isg': False,

@@ -20,6 +20,7 @@ from .ray_utils import (
 from .synthetic_nerf_dataset import (
     load_360_images, load_360_intrinsics,
 )
+from DepthAnythingV2.depth_anything_v2.dpt import DepthAnythingV2
 
 
 class Video360Dataset(BaseDataset):
@@ -143,10 +144,36 @@ class Video360Dataset(BaseDataset):
             self.timestamps = self.timestamps[:, None, None].repeat(
                 1, intrinsics.height, intrinsics.width).reshape(-1)  # [n_frames * h * w]
         assert self.timestamps.min() >= -1.0 and self.timestamps.max() <= 1.0, "timestamps out of range."
+        model_configs = {
+            'vits': {'encoder': 'vits', 'features': 64, 'out_channels': [48, 96, 192, 384]},
+            'vitb': {'encoder': 'vitb', 'features': 128, 'out_channels': [96, 192, 384, 768]},
+            'vitl': {'encoder': 'vitl', 'features': 256, 'out_channels': [256, 512, 1024, 1024]},
+            'vitg': {'encoder': 'vitg', 'features': 384, 'out_channels': [1536, 1536, 1536, 1536]}
+        }
+
+        encoder = 'vits' # or 'vits', 'vitb', 'vitg'
+
+        depth_model = DepthAnythingV2(**model_configs[encoder])
+        depth_model.load_state_dict(torch.load(f'DepthAnythingV2/checkpoints/depth_anything_v2_{encoder}.pth', map_location='cpu'))
+        depth_model = depth_model.to(imgs.device).eval()
+        
+        d_imgs= []
+        for i in imgs:
+            im = i[..., :3].permute(2,0,1)
+            depth = depth_model.infer_image(im) # HxW raw depth map in numpy
+            depth = (depth * i[..., -1])
+            depth = (depth - depth.min()) / (depth.max() - depth.min()) + 0.0000001
+            d_imgs.append(depth.unsqueeze(0).unsqueeze(-1))
+
+        d_imgs = torch.concatenate(d_imgs, dim=0)
+        self.d_imgs = d_imgs.view(-1, 1)
+        
         if imgs is not None and imgs.dtype != torch.uint8:
             imgs = (imgs * 255).to(torch.uint8)
         if self.median_imgs is not None and self.median_imgs.dtype != torch.uint8:
             self.median_imgs = (self.median_imgs * 255).to(torch.uint8)
+        
+        
         if split == 'train':
             imgs = imgs.view(-1, imgs.shape[-1])
         elif imgs is not None:
@@ -290,6 +317,8 @@ class Video360Dataset(BaseDataset):
             camera_dirs, c2w, ndc=self.is_ndc, ndc_near=1.0, intrinsics=self.intrinsics,
             normalize_rd=True)                                        # [num_rays, 3]
 
+
+
         imgs = out['imgs']
         # Decide BG color
         bg_color = torch.ones((1, 3), dtype=torch.float32, device=dev)
@@ -301,6 +330,7 @@ class Video360Dataset(BaseDataset):
             imgs = imgs[:, :3] * imgs[:, 3:] + bg_color * (1.0 - imgs[:, 3:])
         out['imgs'] = imgs
 
+        out['depth'] = self.d_imgs[index]
         return out
 
 
