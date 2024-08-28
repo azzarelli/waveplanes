@@ -1,8 +1,8 @@
 config = {
- 'expname': 'rawr',
+ 'expname': 'trex',
  'logdir': './logs/trex',
  'device': 'cuda:0',
- 'wandbproject':'KW Trex',
+ 'wandbproject':'KW_DNeRF',
 
  'use_wavelet_psn':True,
  'use_wavelet_field':True,
@@ -10,7 +10,7 @@ config = {
  'cache_planes':True, # True if you want faster result, False if you want less computation
 
  'data_downsample': 2.0,
- 'data_dirs': ['data/dnerf/data/trex'],
+ 'data_dirs': ['/home/barry/data/dnerf/trex'],
  'contract': False,
  'ndc': False,
  'isg': False,
@@ -21,7 +21,7 @@ config = {
 
  # Optimization settings
  'num_steps': 30005,
- 'batch_size': 4096,
+ 'batch_size': 4096,#4096
  'scheduler_type': 'warmup_cosine',
  'optim_type': 'adam',
  'lr': 0.01,
@@ -37,8 +37,8 @@ config = {
  'time_smoothness_weight_proposal_net': 0.001,
 
  # Training settings
- 'valid_every': 30000,
- 'save_every': 30000,
+ 'valid_every': 10000,
+ 'save_every': 10001,
  'save_outputs': True,
  'train_fp16': True,
 
@@ -60,7 +60,6 @@ config = {
  'linear_decoder': True,
  'linear_decoder_layers': 4,
  'wave_level': 2,
-
 
  'grid_config': [
      # For Main Fields

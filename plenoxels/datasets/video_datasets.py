@@ -158,15 +158,15 @@ class Video360Dataset(BaseDataset):
         depth_model = depth_model.to(imgs.device).eval()
         
         d_imgs= []
-        for i in imgs:
-            im = i[..., :3].permute(2,0,1)
-            depth = depth_model.infer_image(im) # HxW raw depth map in numpy
-            depth = (depth * i[..., -1])
-            depth = (depth - depth.min()) / (depth.max() - depth.min()) + 0.0000001
-            d_imgs.append(depth.unsqueeze(0).unsqueeze(-1))
+        # for i in imgs:
+        #     im = i[..., :3].permute(2,0,1)
+        #     depth = depth_model.infer_image(im) # HxW raw depth map in numpy
+        #     depth = (depth * i[..., -1])
+        #     depth = (depth - depth.min()) / (depth.max() - depth.min()) + 0.0000001
+        #     d_imgs.append(depth.unsqueeze(0).unsqueeze(-1))
 
-        d_imgs = torch.concatenate(d_imgs, dim=0)
-        self.d_imgs = d_imgs.view(-1, 1)
+        # d_imgs = torch.concatenate(d_imgs, dim=0)
+        # self.d_imgs = d_imgs.view(-1, 1)
         
         if imgs is not None and imgs.dtype != torch.uint8:
             imgs = (imgs * 255).to(torch.uint8)
@@ -330,7 +330,7 @@ class Video360Dataset(BaseDataset):
             imgs = imgs[:, :3] * imgs[:, 3:] + bg_color * (1.0 - imgs[:, 3:])
         out['imgs'] = imgs
 
-        out['depth'] = self.d_imgs[index]
+        # out['depth'] = self.d_imgs[index]
         return out
 
 

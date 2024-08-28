@@ -1,5 +1,5 @@
 config = {
- 'expname': 'lego_explicit',
+ 'expname': 'jumpingjakcs_w3_50k',
  'logdir': './logs/jumpingjacks',
  'device': 'cuda:0',
   'wandbproject':'KW_DNERF',
@@ -11,7 +11,7 @@ config = {
 
 
  'data_downsample': 2.0,
- 'data_dirs': ['data/dnerf/data/jumpingjacks'],
+ 'data_dirs': ['/home/barry/data/dnerf/jumpingjacks'],
  'contract': False,
  'ndc': False,
  'isg': False,
@@ -21,7 +21,7 @@ config = {
  'scene_bbox': [[-1.3, -1.3, -1.3], [1.3, 1.3, 1.3]],
 
  # Optimization settings
- 'num_steps': 30005,
+ 'num_steps': 50005,
  'batch_size': 4096,
  'scheduler_type': 'warmup_cosine',
  'optim_type': 'adam',
@@ -39,7 +39,7 @@ config = {
 
  # Training settings
  'valid_every': 10000,
- 'save_every': 30000,
+ 'save_every': 50000,
  'save_outputs': True,
  'train_fp16': True,
 
@@ -59,7 +59,7 @@ config = {
  # Model settings
 
  'concat_features_across_scales': True,
- 'wave_level': 2,
+ 'wave_level': 3,
  'density_activation': 'trunc_exp',
  'linear_decoder': True,
  'linear_decoder_layers': 4,

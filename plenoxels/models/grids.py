@@ -410,7 +410,6 @@ class GridSet(nn.Module):
     def idwt_transform(self, idwt):
         """ Perform the inverse discrete wavelet transfrom and return the feature planes
         """
-        
         coeffs = []
         for i in range(self.J+1):
             # Hard-coded: Uncomment to print out wavelet coefficients as images

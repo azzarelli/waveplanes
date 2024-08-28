@@ -22,22 +22,43 @@ def compute_plane_tv(t):
     h_tv = torch.square(t[..., 1:, :] - t[..., :h-1, :]).sum()
     w_tv = torch.square(t[..., :, 1:] - t[..., :, :w-1]).sum()
 
-    # h_tv = torch.pow((t[..., 1:, :] - t[..., :h-1, :]).abs(), 3).sum()
-    # w_tv = torch.pow((t[..., :, 1:] - t[..., :, :w-1]).abs(), 3).sum()
-
     return 2 * (h_tv / count_h + w_tv / count_w)  # This is summing over batch and c instead of avg
 
+def compute_wc_plane_tv(t, space_flag=False):
+    if not space_flag:
+        batch_size, c, h, w = t.shape
+        count_h = batch_size * c * (h - 1) * w
+        count_w = batch_size * c * h * (w - 1)
+        
+        h_grad = t[..., 1:, :] - t[..., :h-1, :]
+        w_grad = t[..., :, 1:] - t[..., :, :w-1]
+
+        h_tv = torch.square(h_grad).sum()/ count_h
+        w_tv = torch.square(w_grad).sum()/ count_w
+        
+        h2_grad = h_grad[..., 1:, :] - h_grad[..., :h-2, :] # h-2 and not h1 becasue we work with original shape
+
+        h_sst = torch.square(h2_grad).sum() / count_h
+
+        return 2 * (h_tv  + w_tv ) + h_sst  # This is summing over batch and c instead of avg
+    else:
+        batch_size, c, h, w = t.shape # w is the axis of the time component
+        count_h = batch_size * c * (h - 1) * w
+        count_w = batch_size * c * h * (w - 1)
+
+        h_tv = torch.square(t[..., 1:, :] - t[..., :h-1, :]).sum()
+        w_tv = torch.square(t[..., :, 1:] - t[..., :, :w-1]).sum()
+
+        return 2 * (h_tv / count_h + w_tv / count_w)  # This is summing over batch and c instead of avg
+
+
 def compute_plane_smoothness(t):
- 
     batch_size, c, h, w = t.shape
     
-    # # # Convolve with a second derivative filter, in the time dimension which is dimension 2    
+    # Convolve with a second derivative filter, in the time dimension which is dimension 2    
     first_difference = t[..., 1:, :] - t[..., :h-1, :]  # [batch, c, h-1, w]
     second_difference = first_difference[..., 1:, :] - first_difference[..., :h-2, :]  # [batch, c, h-2, w]
-    
-    # first_difference = t[..., 1:] - t[..., :w-1]  # [batch, c, h-1, w]
-    # second_difference = first_difference[..., 1:] - first_difference[..., :w-2]  # [batch, c, h-2, w]
-    
+
     return torch.square(second_difference).mean() # torch.square(second_difference).mean() + 
 
 def compute_plane_smoothness_wavelet(t):
@@ -159,16 +180,14 @@ class PlaneTV(Regularizer):
         total = 0
 
         # Note: input to compute_plane_tv should be of shape [batch_size, c, h, w]
-        for grids in multi_res_grids:
-            if len(grids) == 3:
-                spatial_grids = [0, 1, 2]
-            else:
-                spatial_grids = [0, 1, 3]  # These are the spatial grids; the others are spatiotemporal
+        for idx, grids in enumerate(multi_res_grids):
+            spatial_grids = [0, 1, 3]  # These are the spatial grids; the others are spatiotemporal
+        
             for grid_id in spatial_grids:
                 total += compute_plane_tv(grids[grid_id])
             for grid in grids:
                 total += compute_plane_tv(grid)
-       
+
         return  torch.as_tensor(total)
     
 
@@ -238,12 +257,12 @@ class L1TimePlanes(Regularizer):
             raise NotImplementedError(self.what)
         
         total = 0.0
-        for grids in multi_res_grids:         
+        for ms_idx, grids in enumerate(multi_res_grids):         
             # Changes from reg w.r.t each time plane to w.r.t all time planes
             for id, grid in enumerate(grids):
                 # Regularisation for ours
                 if (self.what=='field' and self.info['field']) or (self.what=='proposal_network' and self.info['psn']):
-                    total += torch.pow(grid.abs(), 1).mean()
+                    total += torch.pow(grid.abs(), 1).mean()#*(ms_idx+1.)
                 else:
                     if id in [2,4,5]:
                         total += torch.pow((1.-grid).abs(), 1).mean()

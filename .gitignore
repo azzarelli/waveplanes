@@ -1,0 +1,8 @@
+*.pyc
+output/*
+logs/*
+DepthAnythingV2/
+data/*
+wandb/*
+pytorch_wavelets_/*
+submodules/*

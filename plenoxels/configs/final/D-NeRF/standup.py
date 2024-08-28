@@ -7,12 +7,12 @@ config = {
 
  'use_wavelet_psn':True,
  'use_wavelet_field':True,
- 'fusion':'ZAM', # MUL, ADD, ZMM, ZAM
+ 'fusion':'MUL', # MUL, ADD, ZMM, ZAM
 
 
 
  'data_downsample': 2.0,
- 'data_dirs': ['data/dnerf/data/standup'],
+ 'data_dirs': ['/home/barry/data/dnerf/standup'],
  'contract': False,
  'ndc': False,
  'isg': False,
@@ -39,7 +39,7 @@ config = {
  'time_smoothness_weight_proposal_net': 0.001,
 
  # Training settings
- 'valid_every': 30000,
+ 'valid_every': 10000,
  'save_every': 30000,
  'save_outputs': True,
  'train_fp16': True,

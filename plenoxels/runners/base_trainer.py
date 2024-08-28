@@ -93,7 +93,7 @@ class BaseTrainer(abc.ABC):
             
             # Reconstruction loss
             recon_loss = self.criterion(fwd_out['rgb'], data['imgs'])
-            recon_loss += 2.*self.criterion(data['depth']* fwd_out['rgb'], data['depth']*data['imgs'])
+            # recon_loss += (1.-((self.global_step+1.)/self.num_steps))*self.criterion(data['depth']* fwd_out['rgb'], data['depth']*data['imgs'])
 
             # print(data['imgs'].shape)
             # exit()
@@ -143,13 +143,6 @@ class BaseTrainer(abc.ABC):
                     log['Losses/'+loss_name] = loss_val.value            
                 wandb.log(data=log, step=int(self.global_step))
 
-        # t = torch.cuda.get_device_properties(0).total_memory
-        # r = torch.cuda.memory_reserved(0)
-        # a = torch.cuda.memory_allocated(0)
-        # f = r-a  # free inside reserved
-        # print(f'total    : {t}')
-        # print(f'free     : {f/t}')
-        # print(f'used     : {a/t}')
         # Write Planes to wandb
         if self.global_step % 1000 == 0:
             with torch.no_grad():   
@@ -247,7 +240,7 @@ class BaseTrainer(abc.ABC):
         data["rays_o"] = data["rays_o"].to(self.device)
         data["rays_d"] = data["rays_d"].to(self.device)
         data["imgs"] = data["imgs"].to(self.device)
-        data["depth"] = data["depth"].to(self.device)
+        # data["depth"] = data["depth"].to(self.device)
 
         data["near_fars"] = data["near_fars"].to(self.device)
         if "timestamps" in data:

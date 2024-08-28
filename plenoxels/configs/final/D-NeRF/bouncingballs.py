@@ -1,6 +1,6 @@
 config = {
- 'expname': 'balls_depth_loss',
- 'logdir': './logs/bouncingballs_75time_2xdepth',
+ 'expname': 'balls',
+ 'logdir': './logs/bouncingballs',
  'device': 'cuda:0',
   'wandbproject':'KW_DNERF',
 
@@ -31,8 +31,8 @@ config = {
  'histogram_loss_weight': 1.0,
  'l1_time_planes': 0.00001, 
  'l1_time_planes_proposal_net': 0.00001,
- 'plane_tv_weight': 0.00001, 
- 'plane_tv_weight_proposal_net': 0.00001, 
+ 'plane_tv_weight': 0.0001, 
+ 'plane_tv_weight_proposal_net': 0.0001, 
  'time_smoothness_weight': 0.1, 
  'time_smoothness_weight_proposal_net': 0.001,
 
