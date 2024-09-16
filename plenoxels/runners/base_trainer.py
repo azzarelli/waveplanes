@@ -23,9 +23,6 @@ from plenoxels.ops.lr_scheduling import (
 )
 
 import cv2
-from DepthAnythingV2.depth_anything_v2.dpt import DepthAnythingV2
-
-
 import wandb
 
 class BaseTrainer(abc.ABC):

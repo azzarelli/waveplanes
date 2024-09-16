@@ -1,6 +1,6 @@
-# CONFIG=plenoxels/configs/final/D-NeRF/standup_w3.py
-# EXPNAME='standup_w3_60k'
-# PYTHONPATH='.' python plenoxels/main.py --config-path $CONFIG  expname=$EXPNAME
+CONFIG=plenoxels/configs/final/D-NeRF/standup_w3.py
+EXPNAME='standup_w3'
+PYTHONPATH='.' python plenoxels/main.py --config-path $CONFIG  expname=$EXPNAME fusion=ZAM
 
 # CONFIG=plenoxels/configs/final/D-NeRF/standup_75timeres.py
 # EXPNAME='standup_75timeres'
@@ -14,22 +14,22 @@
 # EXPNAME='h_lego_retry'
 # PYTHONPATH='.' python plenoxels/main.py --config-path $CONFIG  expname=$EXPNAME
 
-CONFIG=plenoxels/configs/final/DyNeRF/spinach_lr.py
-EXPNAME='spinach_lr'
-PYTHONPATH='.' python plenoxels/main.py --config-path $CONFIG expname=$EXPNAME fusion=ZAM
+# CONFIG=plenoxels/configs/final/DyNeRF/spinach_lr.py
+# EXPNAME='spinach_lr'
+# PYTHONPATH='.' python plenoxels/main.py --config-path $CONFIG expname=$EXPNAME fusion=ZAM
 
-# CONFIG=plenoxels/configs/final/DyNeRF/cutbeef_lr.py
-# EXPNAME='cutbeef_lr'
-# PYTHONPATH='.' python plenoxels/main.py --config-path $CONFIG  expname=$EXPNAME
+# # CONFIG=plenoxels/configs/final/DyNeRF/cutbeef_lr.py
+# # EXPNAME='cutbeef_lr'
+# # PYTHONPATH='.' python plenoxels/main.py --config-path $CONFIG  expname=$EXPNAME
 
-CONFIG=plenoxels/configs/final/DyNeRF/sear_steak.py
-EXPNAME='sear_steak'
-PYTHONPATH='.' python plenoxels/main.py --config-path $CONFIG  expname=$EXPNAME fusion=ZAM
+# CONFIG=plenoxels/configs/final/DyNeRF/sear_steak.py
+# EXPNAME='sear_steak'
+# PYTHONPATH='.' python plenoxels/main.py --config-path $CONFIG  expname=$EXPNAME fusion=ZAM
 
 
-CONFIG=plenoxels/configs/final/DyNeRF/flame_salmon.py
-EXPNAME='flame_salmon'
-PYTHONPATH='.' python plenoxels/main.py --config-path $CONFIG  expname=$EXPNAME fusion=ZAM
+# CONFIG=plenoxels/configs/final/DyNeRF/flame_salmon.py
+# EXPNAME='flame_salmon'
+# PYTHONPATH='.' python plenoxels/main.py --config-path $CONFIG  expname=$EXPNAME fusion=ZAM
 
 
 

@@ -12,7 +12,7 @@ from pytorch_wavelets_.dwt.transform2d import DWTInverse, DWTForward
 
 from plenoxels.raymarching.spatial_distortions import SpatialDistortion
 
-from plenoxels.models.grids import GridSet, interpolate_features_MUL, interpolate_features_ADD,interpolate_features_ZMM, interpolate_features_ZAM, normalize_aabb
+from plenoxels.models.grids import GridSet, interpolate_features_MUL, interpolate_features_ADD, interpolate_features_ZAM, normalize_aabb
 
 
 class WaveletField(nn.Module):
@@ -303,7 +303,6 @@ class WaveletField(nn.Module):
                 
         return ms_planes
 
-
     def get_density(self, pts: torch.Tensor, timestamps: Optional[torch.Tensor] = None):
         """Computes and returns the densities."""
         if self.spatial_distortion is not None:
@@ -325,8 +324,6 @@ class WaveletField(nn.Module):
             features = interpolate_features_MUL(pts, self.kplanes, self.idwt, self.is_static)
         elif self.fusion_scheme == 'ADD' and self.is_static == False:
             features = interpolate_features_ADD(pts, self.kplanes, self.idwt)
-        elif self.fusion_scheme == 'ZMM' and self.is_static == False:
-            features = interpolate_features_ZMM(pts, self.kplanes, self.idwt)
         elif self.fusion_scheme == 'ZAM' and self.is_static == False:
             features = interpolate_features_ZAM(pts, self.kplanes, self.idwt)
         else:

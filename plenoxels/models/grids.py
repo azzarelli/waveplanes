@@ -97,64 +97,7 @@ def interpolate_features_ADD(pts: torch.Tensor, kplanes, idwt):
 
     return ms_interp
 
-def interpolate_features_ZMM(pts: torch.Tensor, kplanes, idwt):
-    """Generate features for each point
-    """
-    interp = []      
-    mask = []
-    # q,r are the coordinate combinations needed to retrieve pts
-    q,r = 0,1
-    for i in range(6):
-        if i in [2,4,5]:
-            coeff = kplanes[i]
- 
-            ms_features = coeff(pts[..., (q,r)], idwt) # list returned in order of fine to coarse features            
-
-            # Initialise interpolated space
-            if interp == []:
-                interp = [1. for j in range(len(ms_features))]
-                mask = [1. for j in range(len(ms_features))]
-
-            for j, feature in enumerate(ms_features):
-                # Get Zero-value mask
-                m = (feature == 0.).float()
-                # Add features+ZeroMask where 0. features become 1 identity
-                #  & Factorise
-                interp[j] = interp[j] * (feature+m)  
-
-                # Update the Zero-value agreed mask (1. = agreed zero, 0. = not agrees)
-                mask[j] = mask[j]*m # gather zero feature values
-
-                # On final it of spacetime plane
-                if i == 5:
-                    # Invert agreement mask so 0. indicates agreed 0-value and 1. indicates not agreed
-                    mask[j] = (1. - mask[j]).abs()
-                    interp[j] = interp[j] * mask[j] # we zero out the agreed value
-        r += 1
-        if r == 4:
-            q += 1
-            r = q+1
-
-    # Now deal with space-only features
-    q,r = 0,1
-    for i in range(6):
-        if i in [0,1,3]:
-            coeff = kplanes[i]
-
-            ms_features = coeff(pts[..., (q,r)], idwt) # list returned in order of fine to coarse features            
-
-            for j, feature in enumerate(ms_features):
-                interp[j] = interp[j] * feature
-        r += 1
-        if r == 4:
-            q += 1
-            r = q+1
-    
-    # Concatenate ms_features
-    ms_interp = torch.cat(interp, dim=-1)
-    return ms_interp
-
-def interpolate_features_ZAM(pts: torch.Tensor, kplanes, idwt):
+def interpolate_features_ZAM_old(pts: torch.Tensor, kplanes, idwt):
     """Generate features for each point
     """
     interp_sum = []      
@@ -207,6 +150,99 @@ def interpolate_features_ZAM(pts: torch.Tensor, kplanes, idwt):
     # Concatenate ms_features
     ms_interp = torch.cat(interp, dim=-1)
     return ms_interp
+
+def interpolate_features_ZAM(pts: torch.Tensor, kplanes, idwt):
+    """Generate features for each point
+    """
+    # initialise the feature space
+    interp = []
+    q,r = 0,1
+    sp_coeffs = {
+        'yl':[],
+        'yh':[]
+    }
+    st_coeffs = {
+        'yl':[],
+        'yh':[]
+    }
+
+    # Retrieve coefficients and organise
+    for i in range(6):
+        op = kplanes[i]()
+        if i in [0,1,3]:# space-only
+            sp_coeffs['yl'].append(op[0])
+            for j, val in enumerate(op[1:]):
+                if not (str(j) in sp_coeffs.keys()):
+                    sp_coeffs[str(j)] = []
+                sp_coeffs[str(j)].append(val)
+        else:
+            st_coeffs['yl'].append(op[0])
+            for j, val in enumerate(op[1:]):
+                if not (str(j) in st_coeffs.keys()):
+                    st_coeffs[str(j)] = []
+                st_coeffs[str(j)].append(val)   
+        r += 1
+        if r == 4:
+            q += 1
+            r = q+1
+    
+    # Fuse the wavelet features by finding the higher feature
+    for i, key in enumerate(sp_coeffs.keys()):
+        if key != 'yh': 
+            y_sp, indices = torch.max(torch.cat(sp_coeffs[key], dim=0), dim=0)
+            y_st, _ = torch.max(torch.cat(st_coeffs[key], dim=0), dim=0)
+            
+            print(indices.shape)
+            y_sp = y_sp.unsqueeze(0) * kplanes[0].scaler[i]
+            y_st = y_st.unsqueeze(0) * kplanes[0].scaler[i]
+            if key != 'yl':
+                sp_coeffs['yh'].append(y_sp)
+                st_coeffs['yh'].append(y_st)
+            else:
+                sp_coeffs['yl'] = y_sp
+                st_coeffs['yl'] = y_st
+    
+    sp_fine = idwt((sp_coeffs['yl'], sp_coeffs['yh']))
+    st_fine = idwt((st_coeffs['yl'], st_coeffs['yh'])) + 1.
+    print(sp_fine.shape)
+    exit()
+    sp_feature = (
+                grid_sample_wrapper(sp_fine, pts)
+                .view(-1, plane.shape[1])
+        )
+    st_feature = (
+                grid_sample_wrapper(st_fine, pts)
+                .view(-1, plane.shape[1])
+        )
+
+    features = sp * st
+
+    print(features.shape)
+    exit()
+    # q,r are the coordinate combinations needed to retrieve pts
+    q,r = 0,1
+    static_tic = 0
+    for i in range(6):
+        coeff = kplanes[i]
+        
+        ms_features = coeff(pts[..., (q,r)], idwt) # list returned in order of fine to coarse features            
+        # Initialise interpolated space
+        if interp == []:
+            interp = [1. for j in range(len(ms_features))]
+        
+        for j, feature in enumerate(ms_features):
+            interp[j] = interp[j] * feature
+
+        r += 1
+        if r == 4:
+            q += 1
+            r = q+1
+   
+    # Concatenate ms_features
+    ms_interp = torch.cat(interp, dim=-1)
+
+    return ms_interp
+
 
 
 class GridSet(nn.Module):
@@ -412,41 +448,7 @@ class GridSet(nn.Module):
         """
         coeffs = []
         for i in range(self.J+1):
-            # Hard-coded: Uncomment to print out wavelet coefficients as images
-            # if self.grids[i].shape[1] > 16:
-            #     if self.grids[i].shape[2] != 3: # Father coefficients
-            #         grid_to_save = torch.mean(self.grids[i], dim=1).squeeze(0)
-            #         min_value = grid_to_save.min()
-            #         max_value = grid_to_save.max()
-
-            #         # Normalize the tensor to the range [0, 1]
-            #         normalized_tensor = (grid_to_save - min_value) / (max_value - min_value)
-            #         image = Image.fromarray((normalized_tensor.cpu() * 255).byte().numpy(), mode='L')
-            #         image.save(f'coeffs_{i}.png')
-
-            #     elif self.grids[i].shape[2] == 3: # Father coefficients
-            #         grid_to_save = torch.mean(self.grids[i], dim=1).squeeze(0)
-                   
-            #         filters = [grid_to_save[0]]
-
-            #         min_value = grid_to_save.min()
-            #         max_value = grid_to_save.max()
-
-            #         # Normalize the tensor to the range [0, 1]
-            #         normalized_tensor = (grid_to_save - min_value) / (max_value - min_value)
-            #         make_im_tensor = (normalized_tensor.cpu().transpose(0,2) * 255).byte().numpy()
-            #         image = Image.fromarray(make_im_tensor[...,0], mode='L')
-            #         image.save(f'coeffs{i}_0.png')
-            #         image = Image.fromarray(make_im_tensor[...,1], mode='L')
-            #         image.save(f'coeffs{i}_1.png')
-            #         image = Image.fromarray(make_im_tensor[...,2], mode='L')
-            #         image.save(f'coeffs{i}_2.png')
-
             coeffs.append(self.grids[i])
-
-        # Hard-coded: Uncomment to print out a single plane of wavelet coefficients
-        # if self.grids[i].shape[1] > 16:
-        #     exit()
 
         yl = 0.
         yh = []
@@ -474,8 +476,7 @@ class GridSet(nn.Module):
         
         return ms_feats
         
-
-    def forward(self, pts, idwt):
+    def forward_(self, pts, idwt):
         """Given a set of points sample the dwt transformed Kplanes and return features
         """
         # List: coarse to fine with Feature size (1, N, H, W)
@@ -497,7 +498,13 @@ class GridSet(nn.Module):
         self.step += 1
         # Return multiscale features
         return ms_features
+    
+    def forward(self):
+        """Given a set of points sample the dwt transformed Kplanes and return features
+        """
+        self.step += 1
 
+        return self.grids
 
 def plt_grid(grid):
     plotgrid = grid.mean(1).clone().detach().cpu().numpy()
