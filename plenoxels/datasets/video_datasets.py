@@ -63,6 +63,7 @@ class Video360Dataset(BaseDataset):
         else:
             dset_type = "llff"
 
+        self.dset_type = dset_type
         # Note: timestamps are stored normalized between -1, 1.
         if dset_type == "llff":
             if split == "render":
@@ -84,7 +85,7 @@ class Video360Dataset(BaseDataset):
                 poses, imgs, timestamps, self.median_imgs = load_llffvideo_data(
                     videopaths=videopaths, cam_poses=per_cam_poses, intrinsics=intrinsics,
                     split=split, keyframes=keyframes, keyframes_take_each=30)
-
+                
                 self.poses = poses.float()
                 if contraction:
                     self.per_cam_near_fars = per_cam_near_fars.float()
@@ -144,20 +145,20 @@ class Video360Dataset(BaseDataset):
             self.timestamps = self.timestamps[:, None, None].repeat(
                 1, intrinsics.height, intrinsics.width).reshape(-1)  # [n_frames * h * w]
         assert self.timestamps.min() >= -1.0 and self.timestamps.max() <= 1.0, "timestamps out of range."
-        model_configs = {
-            'vits': {'encoder': 'vits', 'features': 64, 'out_channels': [48, 96, 192, 384]},
-            'vitb': {'encoder': 'vitb', 'features': 128, 'out_channels': [96, 192, 384, 768]},
-            'vitl': {'encoder': 'vitl', 'features': 256, 'out_channels': [256, 512, 1024, 1024]},
-            'vitg': {'encoder': 'vitg', 'features': 384, 'out_channels': [1536, 1536, 1536, 1536]}
-        }
+        # model_configs = {
+        #     'vits': {'encoder': 'vits', 'features': 64, 'out_channels': [48, 96, 192, 384]},
+        #     'vitb': {'encoder': 'vitb', 'features': 128, 'out_channels': [96, 192, 384, 768]},
+        #     'vitl': {'encoder': 'vitl', 'features': 256, 'out_channels': [256, 512, 1024, 1024]},
+        #     'vitg': {'encoder': 'vitg', 'features': 384, 'out_channels': [1536, 1536, 1536, 1536]}
+        # }
 
-        encoder = 'vits' # or 'vits', 'vitb', 'vitg'
+        # encoder = 'vits' # or 'vits', 'vitb', 'vitg'
 
-        depth_model = DepthAnythingV2(**model_configs[encoder])
-        depth_model.load_state_dict(torch.load(f'DepthAnythingV2/checkpoints/depth_anything_v2_{encoder}.pth', map_location='cpu'))
-        depth_model = depth_model.to(imgs.device).eval()
+        # depth_model = DepthAnythingV2(**model_configs[encoder])
+        # depth_model.load_state_dict(torch.load(f'DepthAnythingV2/checkpoints/depth_anything_v2_{encoder}.pth', map_location='cpu'))
+        # depth_model = depth_model.to(imgs.device).eval()
         
-        d_imgs= []
+        # d_imgs= []
         # for i in imgs:
         #     im = i[..., :3].permute(2,0,1)
         #     depth = depth_model.infer_image(im) # HxW raw depth map in numpy
@@ -473,14 +474,12 @@ def load_llffvideo_data(videopaths: List[str],
         out_w=intrinsics.width,
         load_every=keyframes_take_each if keyframes else 1,
     )
-    print('load_llffvideo_data')
     imgs, poses, median_imgs, timestamps = zip(*loaded)
     # Stack everything together
     timestamps = torch.cat(timestamps, 0)  # [N]
     poses = torch.cat(poses, 0)            # [N, 3, 4]
     imgs = torch.cat(imgs, 0)              # [N, h, w, 3]
     median_imgs = torch.stack(median_imgs, 0)  # [num_cameras, h, w, 3]
-    print('returned')
     return poses, imgs, timestamps, median_imgs
 
 

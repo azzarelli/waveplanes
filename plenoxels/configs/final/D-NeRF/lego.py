@@ -7,10 +7,10 @@ config = {
 
  'use_wavelet_psn':True,
  'use_wavelet_field':True,
- 'fusion':'ZMM',
+ 'fusion':'MUL',
 
  'data_downsample': 2.0,
- 'data_dirs': ['data/dnerf/data/lego'],
+ 'data_dirs': ['/home/barry/data/dnerf/lego'],
  'contract': False,
  'ndc': False,
  'isg': False,

@@ -459,11 +459,20 @@ class GridSet(nn.Module):
                 yh.append(co)
 
         fine = idwt((yl, yh))
-        coarse = idwt((yl, yh[1:]))
-        
+
+        ms_feats = [fine]
+
+        if not self.is_proposal:
+            coarse = idwt((yl, yh[1:]))
+            ms_feats.append(coarse)
+
         if self.what == 'spacetime':
-            return [fine+1., coarse+1.]
-        return [fine, coarse]
+            ms_feats_ = []
+            for feat in ms_feats:
+                ms_feats_.append(feat + 1.) 
+            ms_feats = ms_feats_  
+        
+        return ms_feats
         
 
     def forward(self, pts, idwt):

@@ -272,32 +272,46 @@ class VideoTrainer(BaseTrainer):
         sum__ = 0.
         sum_psnr_f = 0. 
         sum_psnr_b = 0.
+        len_data = 0
         for img_idx, data in enumerate(dataset):
-            preds = self.eval_step(data)
+            # TODO: remove later, but this evaluates ever 5th image for llff datasets (long eval times for these highres images)
+            if self.global_step < (self.num_steps-1): # Only exectue 
+                if dataset.dset_type == 'llff' and (img_idx % 5) == 0:
+                    eval_flag = True
+                elif dataset.dset_type != 'llff':
+                    eval_flag = True
+                else:
+                    eval_flag = False
+            else:
+                eval_flag = True
 
-            gtimg =  dataset.imgs[img_idx].float() /255.
-            out_metrics, out_img, out_depth = self.evaluate_metrics(
-                gtimg, preds, dset=dataset, img_idx=img_idx, name=None,
-                #data["imgs"], preds, dset=dataset, img_idx=img_idx, name=None,
-                save_outputs=self.save_outputs)
-            pred_frames.append(out_img)
-            if out_depth is not None:
-                out_depths.append(out_depth)
-            for k, v in out_metrics.items():
-                per_scene_metrics[k].append(v)
+            if eval_flag:
+                len_data += 1
+                preds = self.eval_step(data)
 
-            sum_ += out_metrics['psnr']
-            sum__ += out_metrics['ssim']
-            sum_psnr_f += out_metrics['psnr-foreground']
-            sum_psnr_b += out_metrics['psnr-background']
-            pb.set_postfix_str(f"PSNR={out_metrics['psnr']:.2f}", refresh=False)
+                gtimg =  dataset.imgs[img_idx].float() /255.
+                out_metrics, out_img, out_depth = self.evaluate_metrics(
+                    gtimg, preds, dset=dataset, img_idx=img_idx, name=None,
+                    #data["imgs"], preds, dset=dataset, img_idx=img_idx, name=None,
+                    save_outputs=self.save_outputs)
+                pred_frames.append(out_img)
+                if out_depth is not None:
+                    out_depths.append(out_depth)
+                for k, v in out_metrics.items():
+                    per_scene_metrics[k].append(v)
+
+                sum_ += out_metrics['psnr']
+                sum__ += out_metrics['ssim']
+                sum_psnr_f += out_metrics['psnr-foreground']
+                sum_psnr_b += out_metrics['psnr-background']
+                pb.set_postfix_str(f"PSNR={out_metrics['psnr']:.2f}", refresh=False)
             pb.update(1)
 
         if wandb.run is not None:
-            wandb.log({'final_psnr':float(sum_/(img_idx+1))})
-            wandb.log({'final_ssim':float(sum__/(img_idx+1))})
-            wandb.log({'final_psnr_background':float(sum_psnr_b/(img_idx+1))})
-            wandb.log({'final_psnr_foreground':float(sum_psnr_f/(img_idx+1))})
+            wandb.log({'final_psnr':float(sum_/(len_data))})
+            wandb.log({'final_ssim':float(sum__/(len_data))})
+            wandb.log({'final_psnr_background':float(sum_psnr_b/(len_data))})
+            wandb.log({'final_psnr_foreground':float(sum_psnr_f/(len_data))})
 
         pb.close()
         if self.save_video:
