@@ -31,13 +31,8 @@ def interpolate_features_MUL(pts: torch.Tensor, kplanes, idwt, is_static):
     
     # q,r are the coordinate combinations needed to retrieve pts
     q,r = 0,1
-    static_tic = 0
     for i in range(6):
-        
-        # Skip Spacetime Planes
-        if is_static and i in [2,4,5]:
-            continue
-        
+
         coeff = kplanes[i]
         
         ms_features = coeff(pts[..., (q,r)], idwt) # list returned in order of fine to coarse features            
@@ -47,21 +42,12 @@ def interpolate_features_MUL(pts: torch.Tensor, kplanes, idwt, is_static):
         
         for j, feature in enumerate(ms_features):
             interp[j] = interp[j] * feature
-        
-        # If static scene we need the pts indices to be 01, 02, 12
-        if is_static:
-            r += 1
-            if r == 3:
-                q += 1
-                r = q+1
+    
+        r += 1
+        if r == 4:
+            q += 1
+            r = q+1
 
-        # Otherwise if dynamic we need pts indices to be 01, 02, 03, 12, 13, 23
-        else:
-            r += 1
-            if r == 4:
-                q += 1
-                r = q+1
-   
     # Concatenate ms_features
     ms_interp = torch.cat(interp, dim=-1)
 
@@ -154,72 +140,7 @@ def interpolate_features_ZAM_old(pts: torch.Tensor, kplanes, idwt):
 def interpolate_features_ZAM(pts: torch.Tensor, kplanes, idwt):
     """Generate features for each point
     """
-    # initialise the feature space
     interp = []
-    q,r = 0,1
-    sp_coeffs = {
-        'yl':[],
-        'yh':[]
-    }
-    st_coeffs = {
-        'yl':[],
-        'yh':[]
-    }
-
-    # Retrieve coefficients and organise
-    for i in range(6):
-        op = kplanes[i]()
-        if i in [0,1,3]:# space-only
-            sp_coeffs['yl'].append(op[0])
-            for j, val in enumerate(op[1:]):
-                if not (str(j) in sp_coeffs.keys()):
-                    sp_coeffs[str(j)] = []
-                sp_coeffs[str(j)].append(val)
-        else:
-            st_coeffs['yl'].append(op[0])
-            for j, val in enumerate(op[1:]):
-                if not (str(j) in st_coeffs.keys()):
-                    st_coeffs[str(j)] = []
-                st_coeffs[str(j)].append(val)   
-        r += 1
-        if r == 4:
-            q += 1
-            r = q+1
-    
-    # Fuse the wavelet features by finding the higher feature
-    for i, key in enumerate(sp_coeffs.keys()):
-        if key != 'yh': 
-            y_sp, indices = torch.max(torch.cat(sp_coeffs[key], dim=0), dim=0)
-            y_st, _ = torch.max(torch.cat(st_coeffs[key], dim=0), dim=0)
-            
-            print(indices.shape)
-            y_sp = y_sp.unsqueeze(0) * kplanes[0].scaler[i]
-            y_st = y_st.unsqueeze(0) * kplanes[0].scaler[i]
-            if key != 'yl':
-                sp_coeffs['yh'].append(y_sp)
-                st_coeffs['yh'].append(y_st)
-            else:
-                sp_coeffs['yl'] = y_sp
-                st_coeffs['yl'] = y_st
-    
-    sp_fine = idwt((sp_coeffs['yl'], sp_coeffs['yh']))
-    st_fine = idwt((st_coeffs['yl'], st_coeffs['yh'])) + 1.
-    print(sp_fine.shape)
-    exit()
-    sp_feature = (
-                grid_sample_wrapper(sp_fine, pts)
-                .view(-1, plane.shape[1])
-        )
-    st_feature = (
-                grid_sample_wrapper(st_fine, pts)
-                .view(-1, plane.shape[1])
-        )
-
-    features = sp * st
-
-    print(features.shape)
-    exit()
-    # q,r are the coordinate combinations needed to retrieve pts
     q,r = 0,1
     static_tic = 0
     for i in range(6):
@@ -232,6 +153,7 @@ def interpolate_features_ZAM(pts: torch.Tensor, kplanes, idwt):
         
         for j, feature in enumerate(ms_features):
             interp[j] = interp[j] * feature
+        
 
         r += 1
         if r == 4:
@@ -446,27 +368,23 @@ class GridSet(nn.Module):
     def idwt_transform(self, idwt):
         """ Perform the inverse discrete wavelet transfrom and return the feature planes
         """
-        coeffs = []
-        for i in range(self.J+1):
-            coeffs.append(self.grids[i])
-
         yl = 0.
         yh = []
-        
         for i in range(self.J+1):
             if i == 0:
-                yl = self.scaler[i]*coeffs[i]
+                yl = self.scaler[i]*self.grids[i]
+                yl, _ = torch.max(yl, dim=1)
+                yl = yl.unsqueeze(0)
+    
             else:
-                co = self.scaler[i]*coeffs[i]
+                co = self.scaler[i]*self.grids[i]
+                co, _ = torch.max(co, dim=1)
+                co = co.unsqueeze(0)
                 yh.append(co)
 
         fine = idwt((yl, yh))
-
-        ms_feats = [fine]
-
-        if not self.is_proposal:
-            coarse = idwt((yl, yh[1:]))
-            ms_feats.append(coarse)
+        coarse = idwt((yl, yh[1:]))
+        ms_feats = [fine, coarse]
 
         if self.what == 'spacetime':
             ms_feats_ = []
@@ -476,7 +394,7 @@ class GridSet(nn.Module):
         
         return ms_feats
         
-    def forward_(self, pts, idwt):
+    def forward(self, pts, idwt):
         """Given a set of points sample the dwt transformed Kplanes and return features
         """
         # List: coarse to fine with Feature size (1, N, H, W)
@@ -487,7 +405,7 @@ class GridSet(nn.Module):
             if self.cachesig:
                 signal.append(plane.clone())
             
-            # Sample features
+#            # Sample features
             feature = (
                     grid_sample_wrapper(plane, pts)
                     .view(-1, plane.shape[1])
@@ -499,7 +417,8 @@ class GridSet(nn.Module):
         # Return multiscale features
         return ms_features
     
-    def forward(self):
+
+    def forward_(self):
         """Given a set of points sample the dwt transformed Kplanes and return features
         """
         self.step += 1

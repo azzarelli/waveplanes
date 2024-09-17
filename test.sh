@@ -1,5 +1,5 @@
-CONFIG=plenoxels/configs/final/D-NeRF/standup_w3.py
-EXPNAME='standup_w3'
+CONFIG=plenoxels/configs/final/D-NeRF/standup.py
+EXPNAME='standup_propoal_2'
 PYTHONPATH='.' python plenoxels/main.py --config-path $CONFIG  expname=$EXPNAME fusion=ZAM
 
 # CONFIG=plenoxels/configs/final/D-NeRF/standup_75timeres.py

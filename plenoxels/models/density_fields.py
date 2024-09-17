@@ -46,7 +46,8 @@ class KPlaneDensityField(nn.Module):
         self.spatial_distortion = spatial_distortion
         
         self.hexplane = num_input_coords == 4
-        self.feature_dim = num_output_coords
+        self.feature_dim = 2 # num_output_coords * 2
+        print(self.feature_dim)
         self.density_activation = density_activation
         
         self.linear_decoder = linear_decoder

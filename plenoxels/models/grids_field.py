@@ -58,7 +58,7 @@ class WaveletField(nn.Module):
 
         self.concat_features_across_scales = concat_features_across_scales
         if concat_features_across_scales:
-            self.feature_dim = grid_config[0]['feature_size']* 2 #self.wave_level
+            self.feature_dim = 2 # grid_config[0]['feature_size']* 2 #self.wave_level
 
 
         # 1. Initialise planes and the IDWT
