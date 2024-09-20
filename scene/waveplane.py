@@ -107,12 +107,15 @@ def interpolate_ms_features(pts: torch.Tensor,
         multi_scale_interp = torch.cat(multi_scale_interp, dim=-1)
     return multi_scale_interp
 
-def interpolate_features_MUL(pts: torch.Tensor, kplanes, idwt):
+def interpolate_features_MUL(pts: torch.Tensor, kplanes, idwt, ro_grid):
     """Generate features for each point
     """
+    rot_pts = torch.matmul(pts[..., :3].unsqueeze(1), ro_grid).squeeze(1)
+    # print(ro_grid)
+    pts_ = torch.cat([rot_pts, pts[..., -1].unsqueeze(-1)], dim=-1)
+
     # initialise the feature space
     interp = []
-    
     
     # q,r are the coordinate combinations needed to retrieve pts
     q,r = 0,1
@@ -120,7 +123,7 @@ def interpolate_features_MUL(pts: torch.Tensor, kplanes, idwt):
         
         coeff = kplanes[i]
         
-        ms_features = coeff(pts[..., (q,r)], idwt) # list returned in order of fine to coarse features            
+        ms_features = coeff(pts_[..., (q,r)], idwt) # list returned in order of fine to coarse features
         # Initialise interpolated space
         if interp == []:
             interp = [1. for j in range(len(ms_features))]
@@ -387,6 +390,10 @@ class HexPlaneField(nn.Module):
             self.grids.append(gridset)
         
         self.feat_dim = self.grid_config[0]["output_coordinate_dim"] * 2
+
+        init_plane = torch.empty([1,3,3]).cuda()
+        nn.init.uniform_(init_plane, a=-0.01, b=1.)
+        self.reorient_grid = nn.Parameter(init_plane, requires_grad=True)
     
     @property
     def get_aabb(self):
@@ -451,8 +458,9 @@ class HexPlaneField(nn.Module):
 
         pts = pts.reshape(-1, pts.shape[-1])
         features = interpolate_features_MUL(
-            pts, self.grids, self.idwt
+            pts, self.grids, self.idwt, self.reorient_grid
             )
+
         if len(features) < 1:
             features = torch.zeros((0, 1)).to(features.device)
 

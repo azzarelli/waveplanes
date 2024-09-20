@@ -321,6 +321,7 @@ class GUI:
         self.loader = loader
         self.random_loader = random_loader
         self.viewpoint_stack = viewpoint_stack
+        self.viewpoint_stack_loader = viewpoint_stack_loader
 
         self.load_in_memory = False 
         
@@ -363,9 +364,14 @@ class GUI:
         self.train_coarse()
 
         self.init_taining()
-        
-        self.W, self.H = self.scene.getTestCameras().dataset[0].image.shape[2], self.scene.getTestCameras().dataset[0].image.shape[1]
-        self.fovy = self.scene.getTestCameras().dataset[0].FovY
+
+        try:
+            self.W, self.H = self.scene.getTestCameras().dataset[0].image.shape[2], self.scene.getTestCameras().dataset[0].image.shape[1]
+            self.fovy = self.scene.getTestCameras().dataset[0].FovY
+        except:
+            self.W, self.H = self.scene.getTestCameras()[0].image_width, self.scene.getTestCameras()[0].image_height
+            self.fovy = self.scene.getTestCameras()[0].FoVy
+
         self.cam = OrbitCamera(self.W, self.H, r=30., fovy=self.fovy)
         self.mode = "rgb"
         self.buffer_image = np.ones((self.W, self.H, 3), dtype=np.float32)
@@ -550,7 +556,9 @@ class GUI:
             if self.iteration <= self.final_iter:
                 self.train_step()
                 self.iteration += 1
-            
+            else: # Exit on last iteration
+                exit()
+
             if (self.iteration % 100) == 0:
                 self.test_step()
 
@@ -798,7 +806,10 @@ class GUI:
                 if not self.random_loader:
                     viewpoint_stack_loader = DataLoader(self.viewpoint_stack, batch_size=self.opt.batch_size,shuffle=True,num_workers=32,collate_fn=list)
                     self.random_loader = True
+                else:
+                    viewpoint_stack_loader = self.viewpoint_stack_loader
                 self.loader = iter(viewpoint_stack_loader)
+                viewpoint_cams = next(self.loader)
         else:
             idx = 0
             viewpoint_cams = []

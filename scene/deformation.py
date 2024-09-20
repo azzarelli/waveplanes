@@ -10,7 +10,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.nn.init as init
 from utils.graphics_utils import apply_rotation, batch_quaternion_multiply
-# from scene.hexplane import HexPlaneField
+
 from scene.waveplane import HexPlaneField
 
 from scene.grid import DenseGrid

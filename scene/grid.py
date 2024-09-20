@@ -17,10 +17,6 @@ class DenseGrid(nn.Module):
         super(DenseGrid, self).__init__()
         self.channels = channels
         self.world_size = world_size
-        # self.xyz_max = xyz_max
-        # self.xyz_min = xyz_min
-        # self.register_buffer('xyz_min', torch.Tensor(xyz_min))
-        # self.register_buffer('xyz_max', torch.Tensor(xyz_max))
         self.grid = nn.Parameter(torch.ones([1, channels, *world_size]))
 
     def forward(self, xyz):
@@ -32,8 +28,7 @@ class DenseGrid(nn.Module):
         ind_norm = ((xyz - self.xyz_min) / (self.xyz_max - self.xyz_min)).flip((-1,)) * 2 - 1
         out = F.grid_sample(self.grid, ind_norm, mode='bilinear', align_corners=True)
         out = out.reshape(self.channels,-1).T.reshape(*shape,self.channels)
-        # if self.channels == 1:
-            # out = out.squeeze(-1)
+
         return out
 
     def scale_volume_grid(self, new_world_size):
