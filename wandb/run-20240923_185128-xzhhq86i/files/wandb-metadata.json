@@ -1,0 +1,173 @@
+{
+    "os": "Linux-6.8.0-40-generic-x86_64-with-glibc2.17",
+    "python": "3.8.19",
+    "heartbeatAt": "2024-09-23T17:51:28.829160",
+    "startedAt": "2024-09-23T17:51:28.364181",
+    "docker": null,
+    "cuda": null,
+    "args": [
+        "--config-path",
+        "plenoxels/configs/final/D-NeRF/standup.py",
+        "expname=standup_test_bench",
+        "fusion=ZAM"
+    ],
+    "state": "running",
+    "program": "plenoxels/main.py",
+    "codePathLocal": "plenoxels/main.py",
+    "codePath": "plenoxels/main.py",
+    "git": {
+        "remote": "https://github.com/azzarelli/waveplanes.git",
+        "commit": "a61841caedaba37ec4bf922bf16c9686e20cba3b"
+    },
+    "email": "aazzarellib@gmail.com",
+    "root": "/home/xi22005/Desktop/mywork/waveplanes",
+    "host": "IT102014",
+    "username": "xi22005",
+    "executable": "/home/xi22005/anaconda3/envs/waveplanes/bin/python",
+    "cpu_count": 16,
+    "cpu_count_logical": 24,
+    "cpu_freq": {
+        "current": 1039.5600000000002,
+        "min": 800.0,
+        "max": 4783.333333333333
+    },
+    "cpu_freq_per_core": [
+        {
+            "current": 975.969,
+            "min": 800.0,
+            "max": 5100.0
+        },
+        {
+            "current": 800.0,
+            "min": 800.0,
+            "max": 5100.0
+        },
+        {
+            "current": 800.0,
+            "min": 800.0,
+            "max": 5100.0
+        },
+        {
+            "current": 800.0,
+            "min": 800.0,
+            "max": 5100.0
+        },
+        {
+            "current": 1399.375,
+            "min": 800.0,
+            "max": 5100.0
+        },
+        {
+            "current": 800.0,
+            "min": 800.0,
+            "max": 5100.0
+        },
+        {
+            "current": 800.0,
+            "min": 800.0,
+            "max": 5100.0
+        },
+        {
+            "current": 800.0,
+            "min": 800.0,
+            "max": 5100.0
+        },
+        {
+            "current": 1236.604,
+            "min": 800.0,
+            "max": 5200.0
+        },
+        {
+            "current": 800.0,
+            "min": 800.0,
+            "max": 5200.0
+        },
+        {
+            "current": 1400.0,
+            "min": 800.0,
+            "max": 5200.0
+        },
+        {
+            "current": 800.0,
+            "min": 800.0,
+            "max": 5200.0
+        },
+        {
+            "current": 1400.626,
+            "min": 800.0,
+            "max": 5100.0
+        },
+        {
+            "current": 800.0,
+            "min": 800.0,
+            "max": 5100.0
+        },
+        {
+            "current": 799.705,
+            "min": 800.0,
+            "max": 5100.0
+        },
+        {
+            "current": 1238.45,
+            "min": 800.0,
+            "max": 5100.0
+        },
+        {
+            "current": 1399.81,
+            "min": 800.0,
+            "max": 4100.0
+        },
+        {
+            "current": 797.0,
+            "min": 800.0,
+            "max": 4100.0
+        },
+        {
+            "current": 1401.724,
+            "min": 800.0,
+            "max": 4100.0
+        },
+        {
+            "current": 800.0,
+            "min": 800.0,
+            "max": 4100.0
+        },
+        {
+            "current": 797.361,
+            "min": 800.0,
+            "max": 4100.0
+        },
+        {
+            "current": 1089.821,
+            "min": 800.0,
+            "max": 4100.0
+        },
+        {
+            "current": 1312.462,
+            "min": 800.0,
+            "max": 4100.0
+        },
+        {
+            "current": 1401.0,
+            "min": 800.0,
+            "max": 4100.0
+        }
+    ],
+    "disk": {
+        "/": {
+            "total": 467.8895797729492,
+            "used": 432.8365478515625
+        }
+    },
+    "gpu": "NVIDIA GeForce RTX 4090",
+    "gpu_count": 1,
+    "gpu_devices": [
+        {
+            "name": "NVIDIA GeForce RTX 4090",
+            "memory_total": 25757220864
+        }
+    ],
+    "memory": {
+        "total": 62.48984909057617
+    }
+}

@@ -1,0 +1,35 @@
+2024-09-23 18:51:28,364 INFO    MainThread:648854 [wandb_setup.py:_flush():76] Current SDK version is 0.17.1
+2024-09-23 18:51:28,364 INFO    MainThread:648854 [wandb_setup.py:_flush():76] Configure stats pid to 648854
+2024-09-23 18:51:28,364 INFO    MainThread:648854 [wandb_setup.py:_flush():76] Loading settings from /home/xi22005/.config/wandb/settings
+2024-09-23 18:51:28,364 INFO    MainThread:648854 [wandb_setup.py:_flush():76] Loading settings from /home/xi22005/Desktop/mywork/waveplanes/wandb/settings
+2024-09-23 18:51:28,364 INFO    MainThread:648854 [wandb_setup.py:_flush():76] Loading settings from environment variables: {}
+2024-09-23 18:51:28,364 INFO    MainThread:648854 [wandb_setup.py:_flush():76] Inferring run settings from compute environment: {'program_relpath': 'plenoxels/main.py', 'program_abspath': '/home/xi22005/Desktop/mywork/waveplanes/plenoxels/main.py', 'program': 'plenoxels/main.py'}
+2024-09-23 18:51:28,364 INFO    MainThread:648854 [wandb_setup.py:_flush():76] Applying login settings: {}
+2024-09-23 18:51:28,364 INFO    MainThread:648854 [wandb_setup.py:_flush():76] Applying login settings: {}
+2024-09-23 18:51:28,364 INFO    MainThread:648854 [wandb_init.py:_log_setup():520] Logging user logs to /home/xi22005/Desktop/mywork/waveplanes/wandb/run-20240923_185128-xzhhq86i/logs/debug.log
+2024-09-23 18:51:28,365 INFO    MainThread:648854 [wandb_init.py:_log_setup():521] Logging internal logs to /home/xi22005/Desktop/mywork/waveplanes/wandb/run-20240923_185128-xzhhq86i/logs/debug-internal.log
+2024-09-23 18:51:28,365 INFO    MainThread:648854 [wandb_init.py:init():560] calling init triggers
+2024-09-23 18:51:28,365 INFO    MainThread:648854 [wandb_init.py:init():567] wandb.init called with sweep_config: {}
+config: {'expname': 'standup_test_bench', 'logdir': './logs/standup', 'device': 'cuda:0', 'wandbproject': 'Rot_Wave_DNERF', 'use_wavelet_psn': True, 'use_wavelet_field': True, 'fusion': 'ZAM', 'data_downsample': 2.0, 'data_dirs': ['/home/xi22005/DATA/dnerf/standup'], 'contract': False, 'ndc': False, 'isg': False, 'isg_step': -1, 'ist_step': -1, 'keyframes': False, 'scene_bbox': [[-1.3, -1.3, -1.3], [1.3, 1.3, 1.3]], 'num_steps': 30001, 'batch_size': 4096, 'scheduler_type': 'warmup_cosine', 'optim_type': 'adam', 'lr': 0.01, 'distortion_loss_weight': 0.0, 'histogram_loss_weight': 1.0, 'l1_time_planes': 1e-05, 'l1_time_planes_proposal_net': 1e-05, 'plane_tv_weight': 0.0001, 'plane_tv_weight_proposal_net': 0.0001, 'time_smoothness_weight': 0.1, 'time_smoothness_weight_proposal_net': 0.001, 'valid_every': 10000, 'save_every': 30000, 'save_outputs': True, 'train_fp16': True, 'single_jitter': False, 'num_samples': 48, 'num_proposal_samples': [256, 128], 'use_same_proposal_network': False, 'use_proposal_weight_anneal': True, 'proposal_net_args_list': [{'num_input_coords': 4, 'num_output_coords': 8, 'resolution': [32, 32, 32, 50], 'wave_level': 2}, {'num_input_coords': 4, 'num_output_coords': 16, 'resolution': [64, 64, 64, 100], 'wave_level': 2}], 'concat_features_across_scales': True, 'wave_level': 2, 'density_activation': 'trunc_exp', 'linear_decoder': True, 'linear_decoder_layers': 4, 'grid_config': [{'grid_dimensions': 2, 'input_coordinate_dim': 4, 'output_coordinate_dim': 32, 'resolution': [128, 128, 128, 75], 'feature_size': 64, 'wave': 'coif4', 'wave_mode': 'periodization', 'regularise_wavelet_coeff': False, 'show_planes_before_run': False, 'compression': 'LZMA'}, {'wave': 'coif4', 'wave_mode': 'periodization', 'regularise_wavelet_coeff': False, 'concat_features_across_scales': True}], 'tr_loader': <torch.utils.data.dataloader.DataLoader object at 0x728c8d2928b0>, 'tr_dset': <plenoxels.datasets.video_datasets.Video360Dataset object at 0x728c8d2927c0>, 'ts_dset': <plenoxels.datasets.video_datasets.Video360Dataset object at 0x728c8d292fd0>}
+2024-09-23 18:51:28,365 INFO    MainThread:648854 [wandb_init.py:init():610] starting backend
+2024-09-23 18:51:28,365 INFO    MainThread:648854 [wandb_init.py:init():614] setting up manager
+2024-09-23 18:51:28,365 INFO    MainThread:648854 [backend.py:_multiprocessing_setup():105] multiprocessing start_methods=fork,spawn,forkserver, using: spawn
+2024-09-23 18:51:28,373 INFO    MainThread:648854 [wandb_init.py:init():622] backend started and connected
+2024-09-23 18:51:28,376 INFO    MainThread:648854 [wandb_init.py:init():711] updated telemetry
+2024-09-23 18:51:28,392 INFO    MainThread:648854 [wandb_init.py:init():744] communicating run to backend with 90.0 second timeout
+2024-09-23 18:51:28,739 INFO    MainThread:648854 [wandb_run.py:_on_init():2402] communicating current version
+2024-09-23 18:51:28,787 INFO    MainThread:648854 [wandb_run.py:_on_init():2411] got version response upgrade_message: "wandb version 0.18.1 is available!  To upgrade, please run:\n $ pip install wandb --upgrade"
+
+2024-09-23 18:51:28,787 INFO    MainThread:648854 [wandb_init.py:init():795] starting run threads in backend
+2024-09-23 18:51:32,376 INFO    MainThread:648854 [wandb_run.py:_console_start():2380] atexit reg
+2024-09-23 18:51:32,376 INFO    MainThread:648854 [wandb_run.py:_redirect():2235] redirect: wrap_raw
+2024-09-23 18:51:32,376 INFO    MainThread:648854 [wandb_run.py:_redirect():2300] Wrapping output streams.
+2024-09-23 18:51:32,376 INFO    MainThread:648854 [wandb_run.py:_redirect():2325] Redirects installed.
+2024-09-23 18:51:32,377 INFO    MainThread:648854 [wandb_init.py:init():838] run started, returning control to user process
+2024-09-23 19:26:59,122 INFO    MainThread:648854 [wandb_run.py:_finish():2109] finishing run aazzarellib/Rot_Wave_DNERF/xzhhq86i
+2024-09-23 19:26:59,122 INFO    MainThread:648854 [wandb_run.py:_atexit_cleanup():2349] got exitcode: 0
+2024-09-23 19:26:59,122 INFO    MainThread:648854 [wandb_run.py:_restore():2332] restore
+2024-09-23 19:26:59,123 INFO    MainThread:648854 [wandb_run.py:_restore():2338] restore done
+2024-09-23 19:28:08,089 INFO    MainThread:648854 [wandb_run.py:_footer_history_summary_info():4008] rendering history
+2024-09-23 19:28:08,089 INFO    MainThread:648854 [wandb_run.py:_footer_history_summary_info():4040] rendering summary
+2024-09-23 19:28:08,092 INFO    MainThread:648854 [wandb_run.py:_footer_sync_info():3967] logging synced files

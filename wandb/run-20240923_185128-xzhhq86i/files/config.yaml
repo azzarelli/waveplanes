@@ -1,0 +1,220 @@
+wandb_version: 1
+
+expname:
+  desc: null
+  value: standup_test_bench
+logdir:
+  desc: null
+  value: ./logs/standup
+device:
+  desc: null
+  value: cuda:0
+wandbproject:
+  desc: null
+  value: Rot_Wave_DNERF
+use_wavelet_psn:
+  desc: null
+  value: true
+use_wavelet_field:
+  desc: null
+  value: true
+fusion:
+  desc: null
+  value: ZAM
+data_downsample:
+  desc: null
+  value: 2.0
+data_dirs:
+  desc: null
+  value:
+  - /home/xi22005/DATA/dnerf/standup
+contract:
+  desc: null
+  value: false
+ndc:
+  desc: null
+  value: false
+isg:
+  desc: null
+  value: false
+isg_step:
+  desc: null
+  value: -1
+ist_step:
+  desc: null
+  value: -1
+keyframes:
+  desc: null
+  value: false
+scene_bbox:
+  desc: null
+  value:
+  - - -1.3
+    - -1.3
+    - -1.3
+  - - 1.3
+    - 1.3
+    - 1.3
+num_steps:
+  desc: null
+  value: 30001
+batch_size:
+  desc: null
+  value: 4096
+scheduler_type:
+  desc: null
+  value: warmup_cosine
+optim_type:
+  desc: null
+  value: adam
+lr:
+  desc: null
+  value: 0.01
+distortion_loss_weight:
+  desc: null
+  value: 0.0
+histogram_loss_weight:
+  desc: null
+  value: 1.0
+l1_time_planes:
+  desc: null
+  value: 1.0e-05
+l1_time_planes_proposal_net:
+  desc: null
+  value: 1.0e-05
+plane_tv_weight:
+  desc: null
+  value: 0.0001
+plane_tv_weight_proposal_net:
+  desc: null
+  value: 0.0001
+time_smoothness_weight:
+  desc: null
+  value: 0.1
+time_smoothness_weight_proposal_net:
+  desc: null
+  value: 0.001
+valid_every:
+  desc: null
+  value: 10000
+save_every:
+  desc: null
+  value: 30000
+save_outputs:
+  desc: null
+  value: true
+train_fp16:
+  desc: null
+  value: true
+single_jitter:
+  desc: null
+  value: false
+num_samples:
+  desc: null
+  value: 48
+num_proposal_samples:
+  desc: null
+  value:
+  - 256
+  - 128
+use_same_proposal_network:
+  desc: null
+  value: false
+use_proposal_weight_anneal:
+  desc: null
+  value: true
+proposal_net_args_list:
+  desc: null
+  value:
+  - num_input_coords: 4
+    num_output_coords: 8
+    resolution:
+    - 32
+    - 32
+    - 32
+    - 50
+    wave_level: 2
+  - num_input_coords: 4
+    num_output_coords: 16
+    resolution:
+    - 64
+    - 64
+    - 64
+    - 100
+    wave_level: 2
+concat_features_across_scales:
+  desc: null
+  value: true
+wave_level:
+  desc: null
+  value: 2
+density_activation:
+  desc: null
+  value: trunc_exp
+linear_decoder:
+  desc: null
+  value: true
+linear_decoder_layers:
+  desc: null
+  value: 4
+grid_config:
+  desc: null
+  value:
+  - grid_dimensions: 2
+    input_coordinate_dim: 4
+    output_coordinate_dim: 32
+    resolution:
+    - 128
+    - 128
+    - 128
+    - 75
+    feature_size: 64
+    wave: coif4
+    wave_mode: periodization
+    regularise_wavelet_coeff: false
+    show_planes_before_run: false
+    compression: LZMA
+  - wave: coif4
+    wave_mode: periodization
+    regularise_wavelet_coeff: false
+    concat_features_across_scales: true
+tr_loader:
+  desc: null
+  value: <torch.utils.data.dataloader.DataLoader object at 0x728c8d2928b0>
+tr_dset:
+  desc: null
+  value: <plenoxels.datasets.video_datasets.Video360Dataset object at 0x728c8d2927c0>
+ts_dset:
+  desc: null
+  value: <plenoxels.datasets.video_datasets.Video360Dataset object at 0x728c8d292fd0>
+_wandb:
+  desc: null
+  value:
+    python_version: 3.8.19
+    cli_version: 0.17.1
+    framework: torch
+    is_jupyter_run: false
+    is_kaggle_kernel: false
+    start_time: 1727113888
+    t:
+      1:
+      - 1
+      - 41
+      - 55
+      - 105
+      2:
+      - 1
+      - 41
+      - 55
+      - 105
+      3:
+      - 2
+      - 13
+      - 16
+      - 23
+      - 61
+      4: 3.8.19
+      5: 0.17.1
+      8:
+      - 5
+      13: linux-x86_64

@@ -277,6 +277,8 @@ class GridSet(nn.Module):
 
         self.step = 0.
         self.signal = 0.
+
+        
     
     def wave_coefs(self, notflat:bool=False):
         """ Return raw multi-scale wavelet coefficients

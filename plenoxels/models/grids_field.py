@@ -124,6 +124,13 @@ class WaveletField(nn.Module):
             },
         )
 
+        init_plane = torch.empty(
+            [1, 3,3]
+        ).cuda()
+        nn.init.zeros_(init_plane)
+        self.orient_grid = nn.Parameter(init_plane)
+
+
         # 3. Init decoder network
         if self.linear_decoder:
             assert linear_decoder_layers is not None
@@ -303,7 +310,6 @@ class WaveletField(nn.Module):
                 
         return ms_planes
 
-
     def get_density(self, pts: torch.Tensor, timestamps: Optional[torch.Tensor] = None):
         """Computes and returns the densities."""
         if self.spatial_distortion is not None:
@@ -319,6 +325,11 @@ class WaveletField(nn.Module):
             pts = torch.cat((pts, timestamps), dim=-1)  # [n_rays, n_samples, 4]
         
         pts = pts.reshape(-1, pts.shape[-1])
+
+       
+
+        rot_pts = torch.matmul(pts[..., :3].unsqueeze(1), self.orient_grid).squeeze(1)
+        pts = torch.cat([rot_pts, pts[..., -1].unsqueeze(-1)], dim=-1)
 
         # Select the feature fusion scheme
         if self.fusion_scheme == 'MUL':

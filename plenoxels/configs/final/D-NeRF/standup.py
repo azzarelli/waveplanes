@@ -2,17 +2,17 @@ config = {
  'expname': 'nositting',
  'logdir': './logs/standup',
  'device': 'cuda:0',
-  'wandbproject':'KW_DNERF',
+  'wandbproject':'Rot_Wave_DNERF',
 
 
  'use_wavelet_psn':True,
  'use_wavelet_field':True,
- 'fusion':'ZAM', # MUL, ADD, ZMM, ZAM
+ 'fusion':'MUL', # MUL, ADD, ZMM, ZAM
 
 
 
  'data_downsample': 2.0,
- 'data_dirs': ['data/dnerf/data/standup'],
+ 'data_dirs': ['/home/xi22005/DATA/dnerf/standup'],
  'contract': False,
  'ndc': False,
  'isg': False,
@@ -39,7 +39,7 @@ config = {
  'time_smoothness_weight_proposal_net': 0.001,
 
  # Training settings
- 'valid_every': 30000,
+ 'valid_every': 10000,
  'save_every': 30000,
  'save_outputs': True,
  'train_fp16': True,
@@ -52,8 +52,8 @@ config = {
  'use_same_proposal_network': False,
  'use_proposal_weight_anneal': True,
  'proposal_net_args_list': [
-     {'num_input_coords': 4, 'num_output_coords': 8, 'resolution': [64, 64, 64, 100], 'wave_level':2},
-     {'num_input_coords': 4, 'num_output_coords': 16, 'resolution': [128, 128, 128, 100], 'wave_level':2}
+     {'num_input_coords': 4, 'num_output_coords': 8, 'resolution': [32,32,32, 50], 'wave_level':2},
+     {'num_input_coords': 4, 'num_output_coords': 16, 'resolution': [64,64,64, 100], 'wave_level':2}
 
  ],
 
@@ -70,7 +70,7 @@ config = {
     'grid_dimensions': 2,
     'input_coordinate_dim': 4,
     'output_coordinate_dim': 32,
-    'resolution': [256, 256, 256, 150],
+    'resolution': [128, 128, 128, 75],
     'feature_size': 64,
     'wave': 'coif4', # bior4.4, haar
     'wave_mode': 'periodization', # periodization

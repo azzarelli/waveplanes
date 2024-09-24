@@ -124,8 +124,13 @@ class BaseTrainer(abc.ABC):
             with torch.no_grad():
                 log = {
                     'Training Metrics/loss':loss.item(),
-                    'Training Metrics/lr':self.lr
+                    'Training Metrics/lr':self.lr,
                     }
+                
+                for i in range(3):
+                    for j in range(3):
+                        log[f'Orientation Info/{str(i)}_{str(j)}'] = self.model.field.orient_grid[0, i, j]
+
                 # Send log to wandb
                 for loss_name, loss_val in self.loss_info.items():
                     log['Losses/'+loss_name] = loss_val.value            
