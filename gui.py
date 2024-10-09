@@ -294,8 +294,7 @@ class GUI:
 
 
         batch_size = self.opt.batch_size
-        print("Fine-grained training data loading done")
-        
+
         # If the data loader has been defined, stack training data for data loading
         if self.opt.dataloader:
             viewpoint_stack = self.scene.getTrainCameras()
@@ -305,23 +304,19 @@ class GUI:
                 viewpoint_stack_loader = DataLoader(viewpoint_stack, batch_size=batch_size,sampler=sampler,num_workers=16,collate_fn=list)
                 random_loader = False
             else:
-                print('Using original 4DGS sampler')
                 viewpoint_stack_loader = DataLoader(viewpoint_stack, batch_size=batch_size,shuffle=True,num_workers=16,collate_fn=list)
                 random_loader = True
             loader = iter(viewpoint_stack_loader)
+            self.viewpoint_stack_loader = viewpoint_stack_loader
+
         else:
             print('Data loader not loaded')
             random_loader = None
             loader = None
-        # else:
-        #     print('Data loader not loaded')
-        #     random_loader = False
-        #     loader = None
 
         self.loader = loader
         self.random_loader = random_loader
         self.viewpoint_stack = viewpoint_stack
-        self.viewpoint_stack_loader = viewpoint_stack_loader
 
         self.load_in_memory = False 
         
@@ -351,6 +346,7 @@ class GUI:
         self.checkpoint = ckpt_start
         self.expname = expname
         self.debug_from = debug_from
+        self.rotator = None
 
         self.tb_writer = prepare_output_and_logger(expname)
         self.gaussians = GaussianModel(dataset.sh_degree, hyperparams)
@@ -550,8 +546,114 @@ class GUI:
 
         dpg.show_viewport()
 
+
+    def generate_rotator(self, display=False):
+        with torch.no_grad():
+            # Get the positions of the 3D Gaussians and rotate them w.r.t some parameter
+            xyz = self.gaussians.get_xyz
+
+            # Compute EigenDecomp pre-requisits
+            mean = torch.mean(xyz, dim=0)
+            xyz_cent = xyz - mean
+
+            # Find Covariance Matric
+            cov_mat = torch.mm(xyz_cent.t(), xyz_cent) / (xyz_cent.size(0) - 1)
+            # Get Eigen Values and Vecotrs
+            eigenvalues, eigenvectors = torch.linalg.eig(cov_mat)
+
+            # Get projection
+            transformed_data_np = torch.mm(xyz_cent, eigenvectors.real).detach().cpu().numpy()
+
+            origin = torch.zeros(3).detach().cpu().numpy()
+            basis_vectors = torch.eye(3).detach().cpu().numpy()
+            # Project the original basis vectors onto the new PCA axes
+            transformed_vectors = eigenvectors.real.T.detach().cpu().numpy()
+
+            self.rotator = eigenvectors.real.detach()
+
+
+            if display:
+                import plotly.graph_objects as go
+                x = transformed_data_np[:, 0]
+                y = transformed_data_np[:, 1]
+                z = transformed_data_np[:, 2]
+
+                x1 = xyz_cent.detach().cpu().numpy()[:, 0]
+                y1 = xyz_cent.detach().cpu().numpy()[:, 1]
+                z1 = xyz_cent.detach().cpu().numpy()[:, 2]
+
+                # Prepare data for plotting the original and transformed axes
+                fig = go.Figure(data=[go.Scatter3d(
+                    x=x,
+                    y=y,
+                    z=z,
+                    mode='markers',
+                    marker=dict(
+                        size=2,
+                        color='red',  # Color by the z-axis values for some gradient
+                        opacity=0.2
+                    )
+                ), go.Scatter3d(
+                    x=x1,
+                    y=y1,
+                    z=z1,
+                    mode='markers',
+                    marker=dict(
+                        size=2,
+                        color='blue',  # Color by the z-axis values for some gradient
+                        opacity=0.2
+                    )
+                )])
+
+                # Add the original axes (in blue)
+                rgb = ['red', 'green', 'blue']
+                for i in range(3):
+                    fig.add_trace(go.Scatter3d(
+                        x=[origin[0], basis_vectors[i, 0]],
+                        y=[origin[1], basis_vectors[i, 1]],
+                        z=[origin[2], basis_vectors[i, 2]],
+                        mode='lines+markers',
+                        marker=dict(size=4, color='blue'),
+                        line=dict(color=rgb[i], width=4),
+                        name=f'Original Axis {i + 1}'
+                    ))
+
+                # Add the PCA axes (in red)
+                for i in range(3):
+                    fig.add_trace(go.Scatter3d(
+                        x=[origin[0], transformed_vectors[i, 0]],
+                        y=[origin[1], transformed_vectors[i, 1]],
+                        z=[origin[2], transformed_vectors[i, 2]],
+                        mode='lines+markers',
+                        marker=dict(size=4, color='red'),
+                        line=dict(color=rgb[i], width=4),
+                        name=f'PCA Axis {i + 1}'
+                    ))
+
+                # Set the layout for the plot
+                fig.update_layout(
+                    scene=dict(
+                        xaxis_title='X',
+                        yaxis_title='Y',
+                        zaxis_title='Z',
+                        aspectmode='cube',
+                    ),
+                    title='Projection from Original 3D Axes to PCA Axes',
+                    showlegend=True
+                )
+
+                # Show the figure
+                fig.show()
+                exit()
+
+
     # gui mode
     def render(self):
+        # Get rotation initialisation start point
+        self.generate_rotator()
+        torch.save(self.rotator, os.path.join(self.scene.model_path, 'rotator.pth'))
+
+        print(f'Generated Rotor...Commencing Fine Training')
         while dpg.is_dearpygui_running():
             if self.iteration <= self.final_iter:
                 self.train_step()
@@ -564,178 +666,6 @@ class GUI:
 
             self.viewer_step()
             dpg.render_dearpygui_frame()
-    
-    def train_step(self):
-
-        # Start recording step duration
-        self.iter_start.record()
-
-        # Update Gaussian lr for current iteration
-        self.gaussians.update_learning_rate(self.iteration)
-
-        # Every 1000 its we increase the levels of SH up to a maximum degree
-        if self.iteration % 1000 == 0:
-            self.gaussians.oneupSHdegree()
-
-      
-        # If data exists
-        if self.opt.dataloader and not self.load_in_memory:
-            try:
-                viewpoint_cams = next(self.loader)
-            except StopIteration:
-                print("reset dataloader into random dataloader.")
-                if not self.random_loader:
-                    viewpoint_stack_loader = DataLoader(self.viewpoint_stack, batch_size=self.opt.batch_size,shuffle=True,num_workers=32,collate_fn=list)
-                    self.random_loader = True
-                self.loader = iter(viewpoint_stack_loader)
-        else:
-            idx = 0
-            viewpoint_cams = []
-            
-            # Construct batch for current step
-            while idx < self.opt.batch_size :        
-                viewpoint_cam = self.viewpoint_stack.pop(randint(0,len(self.viewpoint_stack)-1))
-                
-                # If viewpoint stack doesn't exist get it from the temp view point list
-                if not self.viewpoint_stack :
-                    self.viewpoint_stack =  self.temp_list.copy()
-                viewpoint_cams.append(viewpoint_cam)
-                idx +=1
-
-            
-            # If there are not cameras to load then end the current iteration
-            if len(viewpoint_cams) == 0:
-                return None
-        
-        # Render
-        if (self.iteration - 1) == self.debug_from:
-            self.pipe.debug = True
-
-        images = []
-        gt_images = []
-        radii_list = []
-        visibility_filter_list = []
-        viewspace_point_tensor_list = []
-
-        # Render and return preds
-        for viewpoint_cam in viewpoint_cams:
-            render_pkg = render(viewpoint_cam, self.gaussians, self.pipe, self.background, stage='fine',cam_type=self.scene.dataset_type)
-            image, viewspace_point_tensor, visibility_filter, radii = render_pkg["render"], render_pkg["viewspace_points"], render_pkg["visibility_filter"], render_pkg["radii"]
-            images.append(image.unsqueeze(0))
-            if self.scene.dataset_type!="PanopticSports":
-                gt_image = viewpoint_cam.original_image.cuda()
-            else:
-                gt_image  = viewpoint_cam['image'].cuda()
-            
-            gt_images.append(gt_image.unsqueeze(0))
-            radii_list.append(radii.unsqueeze(0))
-            visibility_filter_list.append(visibility_filter.unsqueeze(0))
-            viewspace_point_tensor_list.append(viewspace_point_tensor)
-        
-
-        radii = torch.cat(radii_list, 0).max(dim=0).values
-        visibility_filter = torch.cat(visibility_filter_list).any(dim=0)
-        image_tensor = torch.cat(images,0)
-        gt_image_tensor = torch.cat(gt_images,0)
-        
-        # Loss
-        # breakpoint()
-        Ll1 = l1_loss(image_tensor, gt_image_tensor[:,:3,:,:])
-
-        psnr_ = psnr(image_tensor, gt_image_tensor).mean().double()
-
-        loss = Ll1
-        if self.hyperparams.time_smoothness_weight != 0:
-            # tv_loss = 0
-            tv_loss = self.gaussians.compute_regulation(self.hyperparams.time_smoothness_weight, self.hyperparams.l1_time_planes, self.hyperparams.plane_tv_weight)
-            loss += tv_loss
-        if self.opt.lambda_dssim != 0:
-            ssim_loss = ssim(image_tensor,gt_image_tensor)
-            loss += self.opt.lambda_dssim * (1.0-ssim_loss)
-
-        # Backpass
-        loss.backward()
-
-        # Error if loss becomes nan
-        if torch.isnan(loss).any():
-            print("loss is nan,end training, reexecv program now.")
-            os.execv(sys.executable, [sys.executable] + sys.argv)
-        
-        viewspace_point_tensor_grad = torch.zeros_like(viewspace_point_tensor)
-        for idx in range(0, len(viewspace_point_tensor_list)):
-            viewspace_point_tensor_grad = viewspace_point_tensor_grad + viewspace_point_tensor_list[idx].grad
-        
-        # Record end of step
-        self.iter_end.record()
-
-        # Log and save
-        with torch.no_grad():
-            self.timer.pause()
-            if (self.iteration % 10) == 0:
-                self.ema_loss_for_log = 0.4 * loss.item() + 0.6 * self.ema_loss_for_log
-                self.ema_psnr_for_log = 0.4 * psnr_ + 0.6 * self.ema_psnr_for_log
-                total_point = self.gaussians._xyz.shape[0]
-
-                dpg.set_value("_log_iter", f"{self.iteration} / {self.final_iter} its")
-                dpg.set_value("_log_loss", f"Loss: {self.ema_loss_for_log} ")
-                dpg.set_value("_log_psnr", f"PSNR: {psnr_}")
-                dpg.set_value("_log_points", f"{total_point} total points")
-
-                
-            training_report(self.tb_writer, self.iteration, Ll1, loss, l1_loss, self.iter_start.elapsed_time(self.iter_end), self.checkpoint_iterations, self.scene, render, [self.pipe, self.background], 'fine', self.scene.dataset_type)
-            
-            # Save scene when at the saving iteration
-            if (self.iteration in self.saving_iterations):
-                print("\n[ITER {}] Saving Gaussians".format(self.iteration))
-                self.scene.save(self.iteration, 'fine')
-            
-            # Render images
-            if self.dataset.render_process:
-                if (self.iteration < 1000 and self.iteration % 10 == 9) \
-                    or (self.iteration < 3000 and self.iteration % 50 == 49) \
-                        or (self.iteration < 60000 and self.iteration %  100 == 99) :
-                    # breakpoint()
-                        render_training_image(self.scene, self.gaussians, [self.test_cams[self.iteration%len(self.test_cams)]], render, self.pipe, self.background, "finetest", self.iteration,self.timer.get_elapsed_time(),self.scene.dataset_type)
-                        render_training_image(self.scene, self.gaussians, [self.train_cams[self.iteration%len(self.train_cams)]], render, self.pipe, self.background, "finetrain", self.iteration,self.timer.get_elapsed_time(),self.scene.dataset_type)
-                        # render_training_image(scene, gaussians, train_cams, render, pipe, background, stage+"train", iteration,timer.get_elapsed_time(),scene.dataset_type)
-            
-            self.timer.start()
-            
-            # Densification
-            if self.iteration < self.opt.densify_until_iter :
-                # Keep track of max radii in image-space for pruning
-                self.gaussians.max_radii2D[visibility_filter] = torch.max(self.gaussians.max_radii2D[visibility_filter], radii[visibility_filter])
-                self.gaussians.add_densification_stats(viewspace_point_tensor_grad, visibility_filter)
-   
-                opacity_threshold = self.opt.opacity_threshold_fine_init - self.iteration*(self.opt.opacity_threshold_fine_init - self.opt.opacity_threshold_fine_after)/(self.opt.densify_until_iter)  
-                densify_threshold = self.opt.densify_grad_threshold_fine_init - self.iteration*(self.opt.densify_grad_threshold_fine_init - self.opt.densify_grad_threshold_after)/(self.opt.densify_until_iter)  
-                
-                if  self.iteration > self.opt.densify_from_iter and self.iteration % self.opt.densification_interval == 0 and self.gaussians.get_xyz.shape[0]<360000:
-                    size_threshold = 20 if self.iteration > self.opt.opacity_reset_interval else None
-                    self.gaussians.densify(densify_threshold, opacity_threshold, self.scene.cameras_extent, size_threshold, 5, 5, self.scene.model_path, self.iteration, "first")
-                
-                if  self.iteration > self.opt.pruning_from_iter and self.iteration % self.opt.pruning_interval == 0 and self.gaussians.get_xyz.shape[0]>200000:
-                    size_threshold = 20 if self.iteration > self.opt.opacity_reset_interval else None
-                    self.gaussians.prune(densify_threshold, opacity_threshold, self.scene.cameras_extent, size_threshold)
-                    
-                # if iteration > opt.densify_from_iter and iteration % opt.densification_interval == 0 :
-                if self.iteration % self.opt.densification_interval == 0 and self.gaussians.get_xyz.shape[0]<360000 and self.opt.add_point:
-                    self.gaussians.grow(5,5, self.scene.model_path, self.iteration, "fine")
-                    # torch.cuda.empty_cache()
-                
-                if self.iteration % self.opt.opacity_reset_interval == 0:
-                    print("reset opacity")
-                    self.gaussians.reset_opacity()
-
-            # Optimizer step
-            if self.iteration < self.opt.iterations:
-                self.gaussians.optimizer.step()
-                self.gaussians.optimizer.zero_grad(set_to_none = True)
-
-            
-            if (self.iteration in self.checkpoint_iterations):
-                print("\n[ITER {}] Saving Checkpoint".format(self.iteration))
-                torch.save((self.gaussians.capture(), self.iteration), self.scene.model_path + "/chkpnt" + f"_{'fine'}_" + str(self.iteration) + ".pth")
 
     @torch.no_grad()
     def viewer_step(self, specified_cam=None):
@@ -753,7 +683,7 @@ class GUI:
             self.cam.far, 
             time=self.time)
         
-        buffer_image = render(custom_cam, self.gaussians, self.pipe, self.background, stage='fine', cam_type=self.scene.dataset_type)['render']
+        buffer_image = render(custom_cam, self.gaussians, self.pipe, self.background, stage='fine', cam_type=self.scene.dataset_type, rotator=self.rotator)['render']
 
         buffer_image = torch.nn.functional.interpolate(
             buffer_image.unsqueeze(0),
@@ -841,7 +771,7 @@ class GUI:
 
         # Render and return preds
         for viewpoint_cam in viewpoint_cams:
-            render_pkg = render(viewpoint_cam, self.gaussians, self.pipe, self.background, stage='fine',cam_type=self.scene.dataset_type)
+            render_pkg = render(viewpoint_cam, self.gaussians, self.pipe, self.background, stage='fine',cam_type=self.scene.dataset_type, rotator=self.rotator)
             image, viewspace_point_tensor, visibility_filter, radii = render_pkg["render"], render_pkg["viewspace_points"], render_pkg["visibility_filter"], render_pkg["radii"]
             images.append(image.unsqueeze(0))
             if self.scene.dataset_type!="PanopticSports":
@@ -958,6 +888,7 @@ class GUI:
             if (self.iteration in self.checkpoint_iterations):
                 print("\n[ITER {}] Saving Checkpoint".format(self.iteration))
                 torch.save((self.gaussians.capture(), self.iteration), self.scene.model_path + "/chkpnt" + f"_{'fine'}_" + str(self.iteration) + ".pth")
+                torch.save(self.rotator, os.path.join(self.scene.model_path,'rotator.pth'))
 
     @torch.no_grad()
     def test_step(self):
@@ -987,7 +918,7 @@ class GUI:
 
         # Render and return preds
         for viewpoint_cam in viewpoint_cams:
-            render_pkg = render(viewpoint_cam, self.gaussians, self.pipe, self.background, stage='fine',cam_type=self.scene.dataset_type)
+            render_pkg = render(viewpoint_cam, self.gaussians, self.pipe, self.background, stage='fine',cam_type=self.scene.dataset_type, rotator=self.rotator)
             image, viewspace_point_tensor, visibility_filter, radii = render_pkg["render"], render_pkg["viewspace_points"], render_pkg["visibility_filter"], render_pkg["radii"]
             
             images.append(image.unsqueeze(0))
@@ -1154,7 +1085,6 @@ if __name__ == "__main__":
         from utils.params_utils import merge_hparams
         config = mmcv.Config.fromfile(args.configs)
         args = merge_hparams(args, config)
-    print("Optimizing " + args.model_path)
 
     # Initialize system state (RNG)
     safe_state(args.quiet)
@@ -1169,6 +1099,5 @@ if __name__ == "__main__":
         gui.render()
 
     # training( args.checkpoint_iterations, args.start_checkpoint, args.debug_from, args.expname)
-
     # All done
     print("\nTraining complete.")

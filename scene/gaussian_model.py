@@ -234,9 +234,7 @@ class GaussianModel:
         deform = self._deformation[:,:,:time].sum(dim=-1)
         xyz = self._xyz + deform
         return xyz
-    # def save_ply_dynamic(path):
-    #     for time in range(self._deformation.shape(-1)):
-    #         xyz = self.compute_deformation(time)
+
     def load_model(self, path):
         print("loading model from exists{}".format(path))
         weight_dict = torch.load(os.path.join(path,"deformation.pth"),map_location="cuda")

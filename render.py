@@ -55,11 +55,14 @@ def render_set(model_path, name, iteration, views, gaussians, pipeline, backgrou
     render_list = []
     # breakpoint()
     print("point nums:",gaussians._xyz.shape[0])
+
+    rotator =  torch.load(os.path.join(model_path, 'rotator.pth'))
+
     for idx, view in enumerate(tqdm(views, desc="Rendering progress")):
         if idx == 0:time1 = time()
         # breakpoint()
         
-        rendering = render(view, gaussians, pipeline, background,cam_type=cam_type)["render"]
+        rendering = render(view, gaussians, pipeline, background,cam_type=cam_type, rotator=rotator)["render"]
         # torchvision.utils.save_image(rendering, os.path.join(render_path, '{0:05d}'.format(idx) + ".png"))
         render_images.append(to8b(rendering).transpose(1,2,0))
         # print(to8b(rendering).shape)
