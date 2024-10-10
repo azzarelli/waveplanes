@@ -36,6 +36,8 @@ class Deformation(nn.Module):
         
         self.ratio=0
         self.create_net()
+
+
     @property
     def get_aabb(self):
         return self.grid.get_aabb

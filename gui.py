@@ -39,6 +39,9 @@ from time import time
 import copy
 from gaussian_renderer import render, network_gui
 
+import matplotlib.pyplot as plt
+import matplotlib.colors as mcolors
+
 
 to8b = lambda x : (255*np.clip(x.cpu().numpy(),0,1)).astype(np.uint8)
 
@@ -349,7 +352,7 @@ class GUI:
         self.rotator = None
 
         self.tb_writer = prepare_output_and_logger(expname)
-        self.gaussians = GaussianModel(dataset.sh_degree, hyperparams)
+        self.gaussians = GaussianModel(dataset.sh_degree, hyperparams, )
         dataset.model_path = args.model_path
         
         self.timer = Timer()
@@ -380,6 +383,7 @@ class GUI:
         self.ema_loss_for_log = 0.0
         self.ema_psnr_for_log = 0.0
 
+        self.rot_hist = []
 
         dpg.create_context()
 
@@ -548,6 +552,7 @@ class GUI:
 
 
     def generate_rotator(self, display=False):
+        # Generate a starting point for the plane rotation using PCA
         with torch.no_grad():
             # Get the positions of the 3D Gaussians and rotate them w.r.t some parameter
             xyz = self.gaussians.get_xyz
@@ -568,9 +573,6 @@ class GUI:
             basis_vectors = torch.eye(3).detach().cpu().numpy()
             # Project the original basis vectors onto the new PCA axes
             transformed_vectors = eigenvectors.real.T.detach().cpu().numpy()
-
-            self.rotator = eigenvectors.real.detach()
-
 
             if display:
                 import plotly.graph_objects as go
@@ -644,15 +646,19 @@ class GUI:
 
                 # Show the figure
                 fig.show()
-                exit()
 
+        # Set the rotation learnable parameters
+        self.rotator = eigenvectors.real.detach()
+        self.gaussians._deformation.deformation_net.grid.reorient_grid.data = eigenvectors.real #torch.nn.Parameter(self.rotator, requires_grad=True)
+
+        torch.save(self.rotator, os.path.join(self.scene.model_path, 'rotator.pth'))
+
+        print('Re-Orienting Grid Params: ', self.gaussians._deformation.deformation_net.grid.reorient_grid)
 
     # gui mode
     def render(self):
         # Get rotation initialisation start point
         self.generate_rotator()
-        torch.save(self.rotator, os.path.join(self.scene.model_path, 'rotator.pth'))
-
         print(f'Generated Rotor...Commencing Fine Training')
         while dpg.is_dearpygui_running():
             if self.iteration <= self.final_iter:
@@ -683,7 +689,7 @@ class GUI:
             self.cam.far, 
             time=self.time)
         
-        buffer_image = render(custom_cam, self.gaussians, self.pipe, self.background, stage='fine', cam_type=self.scene.dataset_type, rotator=self.rotator)['render']
+        buffer_image = render(custom_cam, self.gaussians, self.pipe, self.background, stage='fine', cam_type=self.scene.dataset_type)['render']
 
         buffer_image = torch.nn.functional.interpolate(
             buffer_image.unsqueeze(0),
@@ -771,7 +777,7 @@ class GUI:
 
         # Render and return preds
         for viewpoint_cam in viewpoint_cams:
-            render_pkg = render(viewpoint_cam, self.gaussians, self.pipe, self.background, stage='fine',cam_type=self.scene.dataset_type, rotator=self.rotator)
+            render_pkg = render(viewpoint_cam, self.gaussians, self.pipe, self.background, stage='fine',cam_type=self.scene.dataset_type)
             image, viewspace_point_tensor, visibility_filter, radii = render_pkg["render"], render_pkg["viewspace_points"], render_pkg["visibility_filter"], render_pkg["radii"]
             images.append(image.unsqueeze(0))
             if self.scene.dataset_type!="PanopticSports":
@@ -890,10 +896,42 @@ class GUI:
                 torch.save((self.gaussians.capture(), self.iteration), self.scene.model_path + "/chkpnt" + f"_{'fine'}_" + str(self.iteration) + ".pth")
                 torch.save(self.rotator, os.path.join(self.scene.model_path,'rotator.pth'))
 
+    def update_rotation_hist(self, rot):
+        if rot.size(0) == 1: rot= rot.squeeze(0)
+
+        if self.rot_hist == []:
+            self.rot_hist = rot.unsqueeze(-1)
+        else:
+            self.rot_hist = torch.cat((self.rot_hist, rot.unsqueeze(-1)), dim=-1)
+
+    def plot_rotation_params(self, rot):
+
+        self.update_rotation_hist(rot)
+
+        plt.figure(figsize=(6, 4))
+        if self.rot_hist[0,0].size(-1) % 5 == 0:
+            x = [i for i in range(self.rot_hist[0,0].size(-1))]
+
+            colors = np.zeros((3, 3, 3))  # Initialize RGB color array
+            x_col = np.linspace(0, 1, 3)  # Normalized x-values from 0 to 1
+            y_col = np.linspace(0, 1, 3)
+            X, Y = np.meshgrid(x_col, y_col)
+            colors[..., 0] = Y  # Red channel increases with Y
+            colors[..., 2] = X
+
+            for i in range(3):
+                for j in range(3):
+                    plt.plot(x, self.rot_hist[i][j].cpu().numpy(),
+                             color=colors[i, j, :])
+            plt.savefig('rotation_history.png')
+
+
     @torch.no_grad()
     def test_step(self):
-        idx = 0
 
+        self.plot_rotation_params(self.gaussians._deformation.deformation_net.grid.reorient_grid)
+
+        idx = 0
         if self.iteration < (self.final_iter -1):
             idx = 0
             viewpoint_cams = []
@@ -918,7 +956,7 @@ class GUI:
 
         # Render and return preds
         for viewpoint_cam in viewpoint_cams:
-            render_pkg = render(viewpoint_cam, self.gaussians, self.pipe, self.background, stage='fine',cam_type=self.scene.dataset_type, rotator=self.rotator)
+            render_pkg = render(viewpoint_cam, self.gaussians, self.pipe, self.background, stage='fine',cam_type=self.scene.dataset_type)
             image, viewspace_point_tensor, visibility_filter, radii = render_pkg["render"], render_pkg["viewspace_points"], render_pkg["visibility_filter"], render_pkg["radii"]
             
             images.append(image.unsqueeze(0))
