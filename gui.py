@@ -661,17 +661,21 @@ class GUI:
         self.generate_rotator()
         print(f'Generated Rotor...Commencing Fine Training')
         while dpg.is_dearpygui_running():
-            if self.iteration <= self.final_iter:
-                self.train_step()
-                self.iteration += 1
-            else: # Exit on last iteration
-                exit()
+        # with tqdm(total=self.final_iter) as pbar:
+        #     while self.iteration <= self.final_iter:
+                if self.iteration <= self.final_iter:
+                    self.train_step()
+                    self.iteration += 1
+                    pbar.update(1)
 
-            if (self.iteration % 100) == 0:
-                self.test_step()
+                else: # Exit on last iteration
+                    exit()
 
-            self.viewer_step()
-            dpg.render_dearpygui_frame()
+                if (self.iteration % 100) == 0:
+                    self.test_step()
+
+                self.viewer_step()
+                dpg.render_dearpygui_frame()
 
     @torch.no_grad()
     def viewer_step(self, specified_cam=None):

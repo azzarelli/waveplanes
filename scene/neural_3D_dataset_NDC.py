@@ -262,12 +262,19 @@ class Neural3D_NDC_Dataset(Dataset):
         poses_arr = np.load(os.path.join(self.root_dir, "poses_bounds.npy"))
         poses = poses_arr[:, :-2].reshape([-1, 3, 5])  # (N_cams, 3, 5)
         self.near_fars = poses_arr[:, -2:]
-        videos = glob.glob(os.path.join(self.root_dir, "cam*/"))
-        videos = sorted(videos)
-        # breakpoint()
 
-        print(len(videos), poses_arr.shape)
-        assert len(videos) == poses_arr.shape[0]
+        # Note todo: deal with later. Feeling too lazy to correct the 4DGS code ("*/" doesn't work with the data preparation, while "*/  is needed for running to avoid loading videos)
+        try:
+            videos = glob.glob(os.path.join(self.root_dir, "cam*/"))
+            videos = sorted(videos)
+            print(len(videos), poses_arr.shape)
+            assert len(videos) == poses_arr.shape[0]
+
+        except:
+            videos = glob.glob(os.path.join(self.root_dir, "cam*"))
+            videos = sorted(videos)
+            print(len(videos), poses_arr.shape)
+            assert len(videos) == poses_arr.shape[0]
 
         H, W, focal = poses[0, :, -1]
         focal = focal / self.downsample
