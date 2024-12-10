@@ -110,8 +110,8 @@ def interpolate_ms_features(pts: torch.Tensor,
 def interpolate_features_MUL(pts: torch.Tensor, kplanes, idwt, ro_grid):
     """Generate features for each point
     """
-    rot_pts = torch.matmul(pts[..., :3], ro_grid)
-    pts_ = torch.cat([rot_pts, pts[..., -1].unsqueeze(-1)], dim=-1)
+    # rot_pts = torch.matmul(pts[..., :3], ro_grid)
+    # pts_ = torch.cat([rot_pts, pts[..., -1].unsqueeze(-1)], dim=-1)
 
     # initialise the feature space
     interp = []
@@ -122,7 +122,7 @@ def interpolate_features_MUL(pts: torch.Tensor, kplanes, idwt, ro_grid):
         
         coeff = kplanes[i]
         
-        ms_features = coeff(pts_[..., (q,r)], idwt) # list returned in order of fine to coarse features
+        ms_features = coeff(pts[..., (q,r)], idwt) # list returned in order of fine to coarse features
         # Initialise interpolated space
         if interp == []:
             interp = [1. for j in range(len(ms_features))]
@@ -261,7 +261,82 @@ class GridSet(nn.Module):
 
         self.step = 0.
         self.signal = 0.
-    
+
+    def compact_save(self):
+        """Construct the dictionary containing non-zero coefficient values"""
+        # Rescale coefficient values
+        coeffs = []
+        for i in range(self.J + 1):
+            coeffs.append(self.grids[i])
+
+        dictionary = {}
+        data = {}
+
+        for i_ in range(self.J + 1):
+            cs = coeffs[i_].squeeze(0)
+            n = 0.1
+
+            lt = (cs < n)
+            gt = (cs > -n)
+            cs = ~(lt * gt) * cs  # .nonzero(as_tuple=True)
+            nzids = (cs == 0.).nonzero(as_tuple=True)
+            non_zero_mask = cs.nonzero()
+
+            cs = cs.tolist()
+
+            i = f'{i_}'
+            data[i] = {}
+            # Deal with father wavelets first (shape B, H, W)
+            if i == '0':
+                dictionary = {f'{k}.{l}.{m}': {'val': cs[k][l][m], 'l': f'{l}', 'm': f'{m}'} for (k, l, m) in
+                              non_zero_mask.tolist()}
+
+                # # Reformat
+                for k_ in dictionary.keys():
+                    k = k_.split('.')[0]
+                    # Get branch keys
+                    l = dictionary[k_]['l']
+                    m = dictionary[k_]['m']
+                    val = dictionary[k_]['val']
+
+                    # Construct k branch
+                    if k not in data[i].keys():
+                        data[i][k] = {}
+                    # Construct l branch
+                    if l not in data[i][k].keys():
+                        data[i][k][l] = {}
+
+                    data[i][k][l][m] = val
+            else:  # Deal with mother wavelets (shape B, F, H, W)
+                dictionary = {f'{k}.{n}.{l}.{m}': {'val': cs[k][n][l][m], 'n': f'{n}', 'l': f'{l}', 'm': f'{m}'} for
+                              (k, n, l, m) in non_zero_mask.tolist()}
+
+                # Reformat
+                for k_ in dictionary.keys():
+                    k = k_.split('.')[0]
+                    # Get branch keys
+                    l = dictionary[k_]['l']
+                    m = dictionary[k_]['m']
+                    n = dictionary[k_]['n']
+                    val = dictionary[k_]['val']
+
+                    # Construct k branch
+                    if k not in data[i].keys():
+                        data[i][k] = {}
+                    # Construct l branch
+                    if n not in data[i][k].keys():
+                        data[i][k][n] = {}
+                    # Construct l branch
+                    if l not in data[i][k][n].keys():
+                        data[i][k][n][l] = {}
+
+                    if m in data[i][k][n][l].keys():
+                        print('Index already defined: likely defined previously by father wavelet')
+
+                    data[i][k][n][l][m] = val
+
+        return data
+
     def wave_coefs(self, notflat:bool=False):
         # Rescale coefficient values
         ms = []
@@ -339,7 +414,6 @@ class GridSet(nn.Module):
 class HexPlaneField(nn.Module):
     def __init__(
         self,
-        
         bounds,
         planeconfig,
         multires
@@ -351,6 +425,8 @@ class HexPlaneField(nn.Module):
         self.grid_config =  [planeconfig]
         self.multiscale_res_multipliers = multires
         self.concat_features = True
+
+
 
         # 1. Init planes
         self.grids = nn.ModuleList()
@@ -393,6 +469,19 @@ class HexPlaneField(nn.Module):
         init_plane = torch.empty([3,3]).cuda()
         nn.init.uniform_(init_plane, a=-0.1, b=.1)
         self.reorient_grid = nn.Parameter(init_plane, requires_grad=True)
+
+        # self.compact_save()
+
+    def compact_save(self, fp):
+        import lzma
+        import pickle
+        data = {}
+
+        for i in range(6):
+            data[f'{i}'] = self.grids[i].compact_save()
+
+        with lzma.open(f"{fp}.xz", "wb") as f:
+            pickle.dump(data, f)
 
     @property
     def get_aabb(self):

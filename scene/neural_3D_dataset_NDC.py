@@ -264,17 +264,17 @@ class Neural3D_NDC_Dataset(Dataset):
         self.near_fars = poses_arr[:, -2:]
 
         # Note todo: deal with later. Feeling too lazy to correct the 4DGS code ("*/" doesn't work with the data preparation, while "*/  is needed for running to avoid loading videos)
-        try:
-            videos = glob.glob(os.path.join(self.root_dir, "cam*/"))
-            videos = sorted(videos)
-            print(len(videos), poses_arr.shape)
-            assert len(videos) == poses_arr.shape[0]
-
-        except:
-            videos = glob.glob(os.path.join(self.root_dir, "cam*"))
-            videos = sorted(videos)
-            print(len(videos), poses_arr.shape)
-            assert len(videos) == poses_arr.shape[0]
+        # try:
+        #     videos = glob.glob(os.path.join(self.root_dir, "cam*/"))
+        #     videos = sorted(videos)
+        #     print(len(videos), poses_arr.shape)
+        #     assert len(videos) == poses_arr.shape[0]
+        #
+        # except:
+        videos = glob.glob(os.path.join(self.root_dir, "cam*.mp4"))
+        videos = sorted(videos)
+        print(len(videos), poses_arr.shape)
+        assert len(videos) == poses_arr.shape[0]
 
         H, W, focal = poses[0, :, -1]
         focal = focal / self.downsample
@@ -341,7 +341,6 @@ class Neural3D_NDC_Dataset(Dataset):
                         video_frame = cv2.cvtColor(video_frame, cv2.COLOR_BGR2RGB)
                         video_frame = Image.fromarray(video_frame)
                         if self.downsample != 1.0:
-
                             img = video_frame.resize(self.img_wh, Image.LANCZOS)
                         img.save(os.path.join(image_path,"%04d.png"%count))
 
@@ -364,9 +363,7 @@ class Neural3D_NDC_Dataset(Dataset):
                 T = -pose[:3,3].dot(R)
                 image_times.append(idx/countss)
                 image_poses.append((R,T))
-                # if self.downsample != 1.0:
-                #     img = video_frame.resize(self.img_wh, Image.LANCZOS)
-                # img.save(os.path.join(image_path,"%04d.png"%count))
+
                 this_count+=1
             N_time = len(images_path)
 
@@ -377,6 +374,8 @@ class Neural3D_NDC_Dataset(Dataset):
         return len(self.image_paths)
     def __getitem__(self,index):
         img = Image.open(self.image_paths[index])
+        # print(self.image_paths[index])
+        # print(self.img_wh, img.size)
         img = img.resize(self.img_wh, Image.LANCZOS)
 
         img = self.transform(img)

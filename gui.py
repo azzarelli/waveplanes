@@ -661,12 +661,12 @@ class GUI:
         self.generate_rotator()
         print(f'Generated Rotor...Commencing Fine Training')
         while dpg.is_dearpygui_running():
-        # with tqdm(total=self.final_iter) as pbar:
+            # with tqdm(total=self.final_iter) as pbar:
         #     while self.iteration <= self.final_iter:
                 if self.iteration <= self.final_iter:
                     self.train_step()
                     self.iteration += 1
-                    pbar.update(1)
+                    # pbar.update(1)
 
                 else: # Exit on last iteration
                     exit()

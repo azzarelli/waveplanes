@@ -248,8 +248,20 @@ class GaussianModel:
             self._deformation_accum = torch.load(os.path.join(path, "deformation_accum.pth"),map_location="cuda")
         self.max_radii2D = torch.zeros((self.get_xyz.shape[0]), device="cuda")
         # print(self._deformation.deformation_net.grid.)
+
+        self.save_deformation(path)
+
     def save_deformation(self, path):
-        torch.save(self._deformation.state_dict(),os.path.join(path, "deformation.pth"))
+
+        # Save planes compressed
+        print('Saveing Planes')
+        self._deformation.deformation_net.grid.compact_save(os.path.join(path, "planes"))
+        print('Saved')
+
+        torch.save(self._deformation.state_dict(), os.path.join(path, "deformation.pth"))
+        self._deformation.deformation_net = None
+        torch.save(self._deformation.state_dict(), os.path.join(path, "deformation_nohex.pth"))
+
         torch.save(self._deformation_table,os.path.join(path, "deformation_table.pth"))
         torch.save(self._deformation_accum,os.path.join(path, "deformation_accum.pth"))
     def save_ply(self, path):
