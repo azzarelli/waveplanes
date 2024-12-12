@@ -2,7 +2,7 @@ config = {
  'expname': 'my experiment name',
  'logdir': './logs/DyNeRF',
  'device': 'cuda:0',
- 'wandbproject':'KW DyNeRF',
+ 'wandbproject':'WDy',
 
  'use_wavelet_psn':True, # If False select K-Planes implementation
  'use_wavelet_field':True,
@@ -10,7 +10,7 @@ config = {
  'fusion':'MUL', # Options: MUL, ADD, ZMM, ZAM
 
  'data_downsample': 2.0,
- 'data_dirs': ['data/DyNeRF/flame_salmon'],
+ 'data_dirs': ['/data/dynerf/flame_steak'],
  'contract': False,
  'ndc': True, # For real scenes true
  'ndc_far': 2.6,
@@ -70,7 +70,7 @@ config = {
     'grid_dimensions': 2,
     'input_coordinate_dim': 4,
     'output_coordinate_dim': 32,
-    'resolution': [512, 512, 512, 150],
+    'resolution': [256, 256, 256, 150],
     'feature_size': 64,
     'wave': 'coif4', # bior4.4, haar
     'wave_mode': 'periodization', # periodization

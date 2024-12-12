@@ -4,3 +4,4 @@ pytorch_wavelets_/
 .idea/
 .git/
 *.xml
+*.pyc
