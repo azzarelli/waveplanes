@@ -55,7 +55,7 @@ def render_to_path(trainer: Union[VideoTrainer, StaticTrainer], extra_name: str 
         pb.update(1)
     pb.close()
 
-    out_fname = os.path.join(trainer.log_dir, f"ST_Ones_ZMM_{extra_name}.mp4")
+    out_fname = os.path.join(trainer.log_dir, f"Render_{extra_name}.mp4")
     write_video_to_file(out_fname, frames)
     log.info(f"Saved rendering path with {len(frames)} frames to {out_fname}")
 

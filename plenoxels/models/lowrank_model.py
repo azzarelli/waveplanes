@@ -290,6 +290,17 @@ class LowrankModel(nn.Module):
             "accumulation": accumulation,
             "depth": depth,
         }
+        # Do another pass for the low-res feature planes
+        # try:
+        field_out_LR = self.field(ray_samples.get_positions(), ray_bundle.directions, timestamps, LR_plane=True)
+        rgb_LR, density_LR = field_out_LR["rgb"], field_out_LR["density"]
+        weights_LR = ray_samples.get_weights(density_LR)
+
+        rgb_LR = self.render_rgb(rgb=rgb_LR, weights=weights_LR, bg_color=bg_color)
+        outputs['rgb_LR'] = rgb_LR
+        # except:
+        #     print('DNR LR Loss')
+        #     pass # no function for this i.e. K-Planes
 
         # These use a lot of GPU memory, so we avoid storing them for eval.
         if self.training:

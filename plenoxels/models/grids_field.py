@@ -12,7 +12,7 @@ from pytorch_wavelets_.dwt.transform2d import DWTInverse, DWTForward
 
 from plenoxels.raymarching.spatial_distortions import SpatialDistortion
 
-from plenoxels.models.grids import GridSet, interpolate_features_MUL, interpolate_features_ADD,interpolate_features_ZMM, interpolate_features_ZAM, normalize_aabb
+from plenoxels.models.grids import GridSet, interpolate_features_MUL, interpolate_features_ADD,interpolate_features_ZMM, interpolate_features_ZAM, normalize_aabb, interpolate_features_MUL_LR
 
 
 class WaveletField(nn.Module):
@@ -185,11 +185,10 @@ class WaveletField(nn.Module):
                 },
             )
     
-    def compact_save(self):
+    def compact_save(self, fp:str='./fields'):
         """Save main field as a compressed hashmap
         """
         
-        fp = './fields/'
         data = {}
         for i in range(6):
             if self.is_static:
@@ -197,6 +196,7 @@ class WaveletField(nn.Module):
                     data[f'{i}'] = self.kplanes[i].compact_save()
             else:
                 data[f'{i}'] = self.kplanes[i].compact_save()
+
 
         # Compress
         import pickle
@@ -219,10 +219,9 @@ class WaveletField(nn.Module):
             with lzma.open(f"{fp}lzma_field.xz", "wb") as f:
                 pickle.dump(data, f)
 
-    def compact_load(self):
+    def compact_load(self,  fp:str='./fields'):
         """Load compressed model
         """
-        fp = './fields/'
         import pickle
         if self.compression_type == 'pickle':
             with open(f'{fp}pickle_field.pickle', 'rb') as handle:
@@ -304,7 +303,7 @@ class WaveletField(nn.Module):
         return ms_planes
 
 
-    def get_density(self, pts: torch.Tensor, timestamps: Optional[torch.Tensor] = None):
+    def get_density(self, pts: torch.Tensor, timestamps: Optional[torch.Tensor] = None, LR_plane:bool=False):
         """Computes and returns the densities."""
         if self.spatial_distortion is not None:
             pts = self.spatial_distortion(pts)
@@ -321,7 +320,9 @@ class WaveletField(nn.Module):
         pts = pts.reshape(-1, pts.shape[-1])
 
         # Select the feature fusion scheme
-        if self.fusion_scheme == 'MUL':
+        if LR_plane:
+            features = interpolate_features_MUL_LR(pts, self.kplanes, self.idwt, self.is_static)
+        elif self.fusion_scheme == 'MUL':
             features = interpolate_features_MUL(pts, self.kplanes, self.idwt, self.is_static)
         elif self.fusion_scheme == 'ADD' and self.is_static == False:
             features = interpolate_features_ADD(pts, self.kplanes, self.idwt)
@@ -348,7 +349,8 @@ class WaveletField(nn.Module):
     def forward(self,
                 pts: torch.Tensor,
                 directions: torch.Tensor,
-                timestamps: Optional[torch.Tensor] = None, 
+                timestamps: Optional[torch.Tensor] = None,
+                LR_plane:bool=False
                 ):
         camera_indices = None
         if self.use_appearance_embedding:
@@ -356,18 +358,13 @@ class WaveletField(nn.Module):
                 raise AttributeError("timestamps (appearance-ids) are not provided.")
             camera_indices = timestamps
             timestamps = None
-        density, features = self.get_density(pts, timestamps)
+        density, features = self.get_density(pts, timestamps, LR_plane)
         n_rays, n_samples = pts.shape[:2]
 
         directions = directions.view(-1, 1, 3).expand(pts.shape).reshape(-1, 3)
-        # if not self.linear_decoder:
-        #     directions = get_normalized_directions(directions)
-        #     encoded_directions = self.direction_encoder(directions)
 
         if self.linear_decoder:
             color_features = [features]
-        # else:
-        #     color_features = [encoded_directions, features.view(-1, self.geo_feat_dim)]
 
         if self.use_appearance_embedding:
             if camera_indices.dtype == torch.float32:
@@ -415,6 +412,8 @@ class WaveletField(nn.Module):
             rgb = self.color_net(color_features).to(directions).view(n_rays, n_samples, 3)
 
         return {"rgb": rgb, "density": density}
+
+
 
     def get_params(self):
         field_params = {}

@@ -100,7 +100,9 @@ class Video360Dataset(BaseDataset):
             # assert not ndc, "Synthetic video dataset does not work with NDC."
             if split == 'render':
                 num_tsteps = 50
-                dnerf_durations = {'hellwarrior': 100, 'mutant': 150, 'hook': 100, 'bouncingballs': 150, 'lego': 50, 'trex': 200, 'standup': 150, 'jumpingjacks': 200}
+                dnerf_durations = {'hellwarrior': 100, 'mutant': 150, 'hook': 100, 'bouncingballs': 150, 'lego': 50, 'trex': 120, 'standup': 150, 'jumpingjacks': 200}
+                dnerf_durations = {'hellwarrior': 90, 'mutant': 90, 'hook': 90, 'bouncingballs': 90, 'lego': 90, 'trex': 90, 'standup': 90, 'jumpingjacks': 90}
+
                 for scene in dnerf_durations.keys():
                     if 'dnerf' in datadir and scene in datadir:
                         num_tsteps = dnerf_durations[scene]
@@ -109,9 +111,12 @@ class Video360Dataset(BaseDataset):
                     generate_spherical_poses(angle, -30.0, 4.0)
                     for angle in np.linspace(-180, 180, num_tsteps + 1)[:-1]
                 ], 0)
+
+                print(render_poses.shape)
                 imgs = None
                 self.poses = render_poses
                 timestamps = torch.linspace(0.0, 1.0, render_poses.shape[0])
+                
                 _, transform = load_360video_frames(
                     datadir, 'train', max_cameras=self.max_cameras, max_tsteps=self.max_tsteps)
                 img_h, img_w = 800, 800

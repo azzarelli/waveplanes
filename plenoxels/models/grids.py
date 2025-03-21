@@ -22,6 +22,51 @@ def normalize_aabb(pts, aabb):
 
 """ The following functions are used to implement the different feature fusion schemes
 """
+def interpolate_features_MUL_LR(pts: torch.Tensor, kplanes, idwt, is_static):
+    """Generate features for each point
+    """
+    # initialise the feature space
+    interp = []
+    
+    
+    # q,r are the coordinate combinations needed to retrieve pts
+    q,r = 0,1
+    static_tic = 0
+    for i in range(6):
+        
+        # Skip Spacetime Planes
+        if is_static and i in [2,4,5]:
+            continue
+        
+        coeff = kplanes[i]
+        
+        ms_features = coeff.forward_LR(pts[..., (q,r)], idwt) # list returned in order of fine to coarse features            
+        # Initialise interpolated space
+        if interp == []:
+            interp = [1. for j in range(len(ms_features))]
+        
+        for j, feature in enumerate(ms_features):
+            interp[j] = interp[j] * feature
+        
+        # If static scene we need the pts indices to be 01, 02, 12
+        if is_static:
+            r += 1
+            if r == 3:
+                q += 1
+                r = q+1
+
+        # Otherwise if dynamic we need pts indices to be 01, 02, 03, 12, 13, 23
+        else:
+            r += 1
+            if r == 4:
+                q += 1
+                r = q+1
+   
+    # Concatenate ms_features
+    ms_interp = torch.cat(interp, dim=-1)
+
+    return ms_interp
+
 def interpolate_features_MUL(pts: torch.Tensor, kplanes, idwt, is_static):
     """Generate features for each point
     """
@@ -413,41 +458,8 @@ class GridSet(nn.Module):
         
         coeffs = []
         for i in range(self.J+1):
-            # Hard-coded: Uncomment to print out wavelet coefficients as images
-            # if self.grids[i].shape[1] > 16:
-            #     if self.grids[i].shape[2] != 3: # Father coefficients
-            #         grid_to_save = torch.mean(self.grids[i], dim=1).squeeze(0)
-            #         min_value = grid_to_save.min()
-            #         max_value = grid_to_save.max()
-
-            #         # Normalize the tensor to the range [0, 1]
-            #         normalized_tensor = (grid_to_save - min_value) / (max_value - min_value)
-            #         image = Image.fromarray((normalized_tensor.cpu() * 255).byte().numpy(), mode='L')
-            #         image.save(f'coeffs_{i}.png')
-
-            #     elif self.grids[i].shape[2] == 3: # Father coefficients
-            #         grid_to_save = torch.mean(self.grids[i], dim=1).squeeze(0)
-                   
-            #         filters = [grid_to_save[0]]
-
-            #         min_value = grid_to_save.min()
-            #         max_value = grid_to_save.max()
-
-            #         # Normalize the tensor to the range [0, 1]
-            #         normalized_tensor = (grid_to_save - min_value) / (max_value - min_value)
-            #         make_im_tensor = (normalized_tensor.cpu().transpose(0,2) * 255).byte().numpy()
-            #         image = Image.fromarray(make_im_tensor[...,0], mode='L')
-            #         image.save(f'coeffs{i}_0.png')
-            #         image = Image.fromarray(make_im_tensor[...,1], mode='L')
-            #         image.save(f'coeffs{i}_1.png')
-            #         image = Image.fromarray(make_im_tensor[...,2], mode='L')
-            #         image.save(f'coeffs{i}_2.png')
 
             coeffs.append(self.grids[i])
-
-        # Hard-coded: Uncomment to print out a single plane of wavelet coefficients
-        # if self.grids[i].shape[1] > 16:
-        #     exit()
 
         yl = 0.
         yh = []
@@ -461,6 +473,7 @@ class GridSet(nn.Module):
 
         fine = idwt((yl, yh))
         coarse = idwt((yl, yh[1:]))
+        
         
         if self.what == 'spacetime':
             return [fine+1., coarse+1.]
@@ -489,6 +502,21 @@ class GridSet(nn.Module):
         self.step += 1
         # Return multiscale features
         return ms_features
+
+    def forward_LR(self, pts, idwt):
+        """Given a set of points sample the dwt transformed Kplanes and return features
+        """
+        # Get Lowest resoluton plane (father wavelet)
+        yl = self.scaler[0]*self.grids[0]
+        if self.what == 'spacetime':
+            yl += 1.
+
+        feature = feature = (
+                    grid_sample_wrapper(yl, pts)
+                    .view(-1, yl.shape[1])
+                )
+        
+        return [feature, feature]
 
 
 def plt_grid(grid):

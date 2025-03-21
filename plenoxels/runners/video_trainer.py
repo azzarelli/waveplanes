@@ -261,9 +261,9 @@ class VideoTrainer(BaseTrainer):
             #     psn.compact_save(psn_num)
             #     psn.compact_load(psn_num)
             print('Compressing model ...')
-            self.model.field.compact_save()
+            self.model.field.compact_save(self.log_dir)
             print('Model saved, now loading ...')
-            self.model.field.compact_load()
+            self.model.field.compact_load(self.log_dir)
 
         per_scene_metrics: Dict[str, Union[float, List]] = defaultdict(list)
         pred_frames, out_depths = [], []

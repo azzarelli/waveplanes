@@ -88,13 +88,15 @@ class BaseTrainer(abc.ABC):
                 )
             
             self.timer.check("model-forward")
-
-            # Need to composite the alpha values
         
             # Reconstruction loss
             recon_loss = self.criterion(fwd_out['rgb'], data['imgs'])
             # Regularization
             loss = recon_loss
+
+            if 'rgb_LR' in fwd_out.keys():
+                LR_recon_loss = self.criterion(fwd_out['rgb_LR'], data['imgs'])
+                loss = loss + -10 * math.log10(LR_recon_loss) # PSNR
             
             # Get undeformed planes
             for r in self.regularizers:

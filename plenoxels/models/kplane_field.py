@@ -114,15 +114,17 @@ class KPlaneField(nn.Module):
         # 1. Init planes
         self.grids = nn.ModuleList()
         self.feature_dim = 0
-        for res in self.multiscale_res_multipliers:
+        for res in [1, 2]:#self.multiscale_res_multipliers:
 
             # initialize coordinate grid
             config = self.grid_config[0].copy()
             # Resolution fix: multi-res only on spatial planes
      
             config["resolution"] = [
-                r * res for r in config["resolution"][:3]
-            ] + config["resolution"][3:]
+                r * res for r in config["resolution"][:]
+            ] #+ config["resolution"][3:]
+
+            # print(config['resolution'])
 
             gp = init_grid_param(
                 grid_nd=config["grid_dimensions"],
@@ -136,7 +138,8 @@ class KPlaneField(nn.Module):
             else:
                 self.feature_dim = gp[-1].shape[1]
             self.grids.append(gp)
- 
+
+        # exit()
         # log.info(f"Initialized model grids: {self.grids}")
 
         # 2. Init appearance code-related parameters
